@@ -45,12 +45,35 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CodeGenerator\BoundaryCaseTestMethodGenerator.cs" />
+    <Compile Include="CodeGenerator\CodeGeneratorBase.cs" />
+    <Compile Include="CodeGenerator\CsprojFileGenerator.cs" />
+    <Compile Include="CodeGenerator\LLMBoundaryCaseTestMethodGenerator.cs" />
+    <Compile Include="CodeGenerator\LLMTestFileGenerator.cs" />
+    <Compile Include="CodeGenerator\MethodGenerator.cs" />
+    <Compile Include="CodeGenerator\TestFileGenerator.cs" />
+    <Compile Include="CodeGenerator\TestingFuncOutputCalcMethodGenerator.cs" />
+    <Compile Include="CodeGenerator\RuledTestMethodGenerator.cs" />
+    <Compile Include="Entity\FunctionCallNode.cs" />
+    <Compile Include="Entity\FunctionInfo.cs" />
+    <Compile Include="Entity\MockFramework.cs" />
+    <Compile Include="Entity\MockFrameworks.cs" />
+    <Compile Include="Entity\ObjectInfo.cs" />
+    <Compile Include="Entity\ObjectInfoWithName.cs" />
+    <Compile Include="Entity\TestCleanupStyle.cs" />
+    <Compile Include="Entity\TestedObjectCreationStyle.cs" />
+    <Compile Include="Entity\TestFramework.cs" />
+    <Compile Include="Entity\TestFrameworks.cs" />
+    <Compile Include="Entity\TestInitializeStyle.cs" />
+    <Compile Include="JsonTupleConverter.cs" />
+    <Compile Include="LLM\AzureOpenAIClient.cs" />
     <Compile Include="OptionPageGrid.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="RecordModeStartCommand.cs" />
     <Compile Include="UTGenCommand.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utils\Utils.cs" />
     <Compile Include="VSIXHelloWorldProjectPackage.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -68,8 +91,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Azure.AI.OpenAI">
+      <Version>1.0.0-beta.17</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis">
+      <Version>4.9.2</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.0.32112.339" ExcludeAssets="runtime" />
-    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.9.3180" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.9.3174">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>13.0.3</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
     <VSCTCompile Include="VSIXHelloWorldProjectPackage.vsct">

@@ -11,19 +11,9 @@ namespace VSIXHelloWorldProject
     public class OptionPageGrid : DialogPage
     {
         [Category("UTGenSettings")]
-        [DisplayName("ApiType")]
-        [Description("ApiType")]
-        public string ApiType { get; set; }
-
-        [Category("UTGenSettings")]
         [DisplayName("ApiEndpoint")]
         [Description("ApiEndpoint")]
         public string ApiEndpoint { get; set; }
-
-        [Category("UTGenSettings")]
-        [DisplayName("ApiVersion")]
-        [Description("ApiVersion")]
-        public string ApiVersion { get; set; }
 
         [Category("UTGenSettings")]
         [DisplayName("ApiKey")]
@@ -34,10 +24,5 @@ namespace VSIXHelloWorldProject
         [DisplayName("DeploymentName")]
         [Description("DeploymentName")]
         public string DeploymentName { get; set; }
-
-        [Category("UTGenSettings")]
-        [DisplayName("ModelName")]
-        [Description("ModelName")]
-        public string ModelName { get; set; }
     }
 }

@@ -2,9 +2,17 @@
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Task = System.Threading.Tasks.Task;
+using Microsoft.VisualStudio.Package;
+using Microsoft.VisualStudio.Debugger.Interop;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.OLE.Interop;
 
 namespace VSIXHelloWorldProject
 {
@@ -45,27 +53,11 @@ namespace VSIXHelloWorldProject
             }
         }
 
-        public string ApiType
-        {
-            get
-            {
-                return page.ApiType;
-            }
-        }
-
         public string ApiEndpoint
         {
             get
             {
                 return page.ApiEndpoint;
-            }
-        }
-
-        public string ApiVersion
-        {
-            get
-            {
-                return page.ApiVersion;
             }
         }
 
@@ -85,14 +77,6 @@ namespace VSIXHelloWorldProject
             }
         }
 
-        public string ModelName
-        {
-            get
-            {
-                return page.ModelName;
-            }
-        }
-
         public DTE2 dte;
         public DebuggerEvents debuggerEvents;
         public bool InRecordMode = false;
@@ -104,8 +88,8 @@ namespace VSIXHelloWorldProject
         /// Initialization of the package; this method is called right after the package is sited, so this is the place
         /// where you can put all the initialization code that rely on services provided by VisualStudio.
         /// </summary>
-        /// <param name="cancellationToken">A cancellation token to monitor for initialization cancellation, which can occur when VS is shutting down.</param>
-        /// <param name="progress">A provider for progress updates.</param>
+        /// <param Name="cancellationToken">A cancellation token to monitor for initialization cancellation, which can occur when VS is shutting down.</param>
+        /// <param Name="progress">A provider for progress updates.</param>
         /// <returns>A task representing the async work of package initialization, or an already completed task if there is none. Do not return null from this method.</returns>
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
@@ -115,6 +99,7 @@ namespace VSIXHelloWorldProject
 
             // dte = this.GetService<DTE, DTE2>() as DTE2;
             dte = await GetServiceAsync(typeof(DTE)) as DTE2;
+            IVsDebugger vsDebugger = await GetServiceAsync(typeof(SVsShellDebugger)) as IVsDebugger;
             // DTE2 dte = package.GetService(typeof(DTE)) as DTE2;
             if (dte == null)
             {
@@ -122,7 +107,7 @@ namespace VSIXHelloWorldProject
             }
             // Subscribe to debugger events  
             debuggerEvents = dte.Events.DebuggerEvents;
-            debuggerEvents.OnEnterBreakMode += OnEnterBreakMode;
+            // debuggerEvents.OnEnterBreakMode += OnEnterBreakMode;
             await UTGenCommand.InitializeAsync(this);
             await RecordModeStartCommand.InitializeAsync(this);
         }
@@ -132,6 +117,7 @@ namespace VSIXHelloWorldProject
         private void OnEnterBreakMode(dbgEventReason Reason, ref dbgExecutionAction ExecutionAction)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
+
             if (!InRecordMode)
             {
                 return;
@@ -143,19 +129,63 @@ namespace VSIXHelloWorldProject
             // dte.Debugger.CurrentStackFrame
             if (dte.Debugger.BreakpointLastHit.Enabled)
             {
-                var tag = dte.Debugger.BreakpointLastHit.Tag;
-                StackFrame stackFrame = dte.Debugger.CurrentStackFrame;
-                foreach (Expression variable in stackFrame.Locals)
-                {
-                    string variableName = variable.Name;
-                    string variableValue = variable.Value;
-                    string variableType = variable.Type;
-                    Console.WriteLine($"variableName: {variableName}\n variableValue: {variableValue}\n variableType: {variableType}\n\n\n");
-                    // If you need to check if it's a parameter, you might need additional logic here  
+                // IVsDebugger vsDebugger = (IVsDebugger)this.GetService(typeof(IVsDebugger));
+                EnvDTE100.Debugger5 debugger = (EnvDTE100.Debugger5)dte.Debugger;
 
-                    // Do something with the variable information  
+                // dte.ExecuteCommand("View.ImmediateWindow");
+                dte.ExecuteCommand("Debug.Immediate");
+                // dte.ExecuteCommand("Edit.Copy", "n1 = 100;");
+                //dte.ExecuteCommand("Edit.Paste", "n1 = 100;");
+                //EnvDTE.Window immediateWindow = dte.Windows.Item(EnvDTE.Constants.vsext_wk_ImmedWindow);
+                //immediateWindow.Activate();
+
+                // dte.Debugger.ExecuteStatement("n1 = 100;");
+                debugger.Go(true);
+                debugger.ExecuteStatement("n1 = 100;");
+                // dte.ExecuteCommand("调试.即时", "n1 = 100;");
+                // dte.ExecuteCommand("ImmediateWindow", "var assembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyName(new System.Reflection.AssemblyName(\"Newtonsoft.Json\"));");
+                // dte.Debugger.ExecuteStatement("(new Func<string>(() => { var assembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(\"D:\\\\Projects\\\\.NetCore\\\\CSharpTest\\\\bin\\\\Debug\\\\net8.0\\\\Newtonsoft.Json.dll\");var type = assembly.GetType(\"Newtonsoft.Json.JsonConvert\");var methodInfo = type.GetMethod(\"SerializeObject\", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public);var result = methodInfo.Invoke(null, new object[] { this }); return result.ToString(); }))()");
+                // Task task = Task.Run( () => dte.Debugger.ExecuteStatement("this"));
+                // task.Wait();
+
+
+                EnvDTE.StackFrame sf = debugger.CurrentStackFrame;
+                List<string> parameterNames = new List<string>();
+                List<string> results = new List<string>();
+
+                foreach (Expression exp in sf.Locals)
+                {
+                    parameterNames.Add(exp.Name);
                 }
+                foreach (string name in parameterNames)
+                {
+                    /*
+                    if (Name=="this")
+                    {
+                        continue;
+                    }
+                    */
+                    // Newtonsoft.Json.JsonConvert.SerializeObject(Name);
+                    // var x = debugger.GetExpression($"Newtonsoft.Json.JsonConvert.SerializeObject({Name})");
+                    var x = debugger.GetExpression(name);
+                    Console.WriteLine($"x.Value: {x.Value}");
+                    results.Add(x.Value);
+                }
+                Console.WriteLine($"results.Count: {results.Count}");
             }
+        }
+
+        public IVsTextView GetCurrentTextView()
+        {
+            var textManager = (IVsTextManager)ServiceProvider.GlobalProvider.GetService(typeof(SVsTextManager));
+            if (textManager == null)
+            {
+                throw new InvalidOperationException("Could not get IVsTextManager service.");
+            }
+
+            IVsTextView activeView = null;
+            textManager.GetActiveView(1, null, out activeView);
+            return activeView;
         }
     }
 }

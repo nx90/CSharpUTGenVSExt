@@ -1,0 +1,28 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace VSIXHelloWorldProject.Entity
+{
+    public class FunctionInfo
+    {
+        public int ObjHashCode { get; set; }
+        public string FunctionName { get; set; }
+        public string BelongedClassName { get; set; }
+        public List<ObjectInfo> InputParams { get; set; }
+        public ObjectInfo Output { get; set; }
+        public List<string> UsedNamespaces { get; set; }
+
+        public FunctionInfo ShallowCopy()
+        {
+            var newInputParams = InputParams.Select(para => para.ShallowCopy()).ToList();
+            var newOutput = Output.ShallowCopy();
+            var result = (FunctionInfo)this.MemberwiseClone();
+            result.Output = newOutput;
+            result.InputParams = newInputParams;
+            return result;
+        }
+    }
+}
