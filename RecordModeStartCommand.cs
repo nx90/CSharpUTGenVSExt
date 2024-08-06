@@ -154,6 +154,7 @@ namespace VSIXHelloWorldProject
                 GetMethodCodePosition(currentNode);
                 GetSerializedFields(currentNode);
                 GetSerializedInputAndThis(currentNode, uniquePrefix);
+                GetConstructorParams(currentNode, uniquePrefix);
                 currentNode.NamespaceName = currentNode.NamespaceName.Distinct().ToList();
                 StackFrame2 stackFrame = package.dte.Debugger.CurrentStackFrame as StackFrame2;
                 currentNode.CodeFunctionNameFromDTE = stackFrame.FunctionName;
@@ -271,6 +272,30 @@ namespace VSIXHelloWorldProject
             currentNode.ClassTypeFields = ClassTypeFields;
         }
 
+        private void GetConstructorParams(FunctionCallNode currentNode, string uniquePrefix)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            string constructorString = debugger.GetExpression($"(this.GetType().GetConstructors()[0] as System.Reflection.RuntimeConstructorInfo).ToString()").Value.TrimStart('"').TrimEnd('"');
+            var match = Regex.Match(constructorString, @"(?<=\().*(?=\))");
+
+            if (match.Success && !string.IsNullOrEmpty(match.Value))
+            {
+                currentNode.ConstructorParameters = match.Value.Split(',').ToList();
+            }
+
+
+            int ConstructorParamsCount = int.Parse(debugger.GetExpression($"(this.GetType().GetConstructors()[0] as System.Reflection.RuntimeConstructorInfo).ArgumentTypes.Length").Value.TrimStart('"').TrimEnd('"'));
+            for (int index = 0; index < ConstructorParamsCount; index++)
+            {
+                bool isVauleType = bool.Parse(debugger.GetExpression($"(this.GetType().GetConstructors()[0] as System.Reflection.RuntimeConstructorInfo).ArgumentTypes[{index}].IsValueType").Value.TrimStart('"').TrimEnd('"'));
+                if (isVauleType)
+                {
+                    // Use default here because no Type should named as default
+                    currentNode.ConstructorParameters[index] = "default";
+                }
+            }
+        }
+
         private void GetSerializedMethodInfo(FunctionCallNode currentNode, string uniquePrefix)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -314,6 +339,8 @@ namespace VSIXHelloWorldProject
             Expression jsonValueExp;
             string jsonValueObjName = $"{uniquePrefix}_serializedInputOrThis";
             string jsonValue;
+            HashSet<string> interfaceTypeInputs = new HashSet<string>();
+            HashSet<string> classTypeInputs = new HashSet<string>();
 
             foreach (Expression exp in sf.Arguments)
             {
@@ -340,16 +367,20 @@ namespace VSIXHelloWorldProject
                     string argHashCodeString = debugger.GetExpression($"{uniquePrefix}_objHashCode").Value.TrimStart('"').TrimEnd('"');
                     int.TryParse(argHashCodeString, out int argHashCode);
                     interfaceInputHashCodes[argHashCode] = exp.Name;
+                    interfaceTypeInputs.Add(exp.Name);
                 }
                 else
                 {
                     inputTypes[exp.Name] = exp.Type;
+                    classTypeInputs.Add(exp.Name);
                 }
                 currentNode.NamespaceName.Add(debugger.GetExpression($"{name}.GetType().Namespace").Value.TrimStart('"').TrimEnd('"'));
             }
             currentNode.Input = inputJsonValues;
             currentNode.InputTypes = inputTypes;
             currentNode.InterfaceInputHashCodes = interfaceInputHashCodes;
+            currentNode.InterfaceTypeInputs = interfaceTypeInputs;
+            currentNode.ClassTypeInputs = classTypeInputs;
             currentNode.InterfaceTypeInputsRuntimeTypesMap = InterfaceTypeInputsRuntimeTypesMap;
 
             // GetSerializedThis

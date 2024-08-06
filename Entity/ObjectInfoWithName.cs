@@ -9,5 +9,10 @@ namespace VSIXHelloWorldProject.Entity
     public class ObjectInfoWithName : ObjectInfo
     {
         public string Name { get; set; }
+
+        public new ObjectInfoWithName ShallowCopy()
+        {
+            return (ObjectInfoWithName)this.MemberwiseClone();
+        }
     }
 }

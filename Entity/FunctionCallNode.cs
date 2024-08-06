@@ -16,6 +16,7 @@ namespace VSIXHelloWorldProject.Entity
         public string ClassName { get; set; }
         // This is used to find the exactly interface obj who called this function.
         public int ObjHashCode { get; set; }
+        public List<string> ConstructorParameters { get; set; } = new List<string> ();
         public Dictionary<string, string> Fields { get; set; }
         public Dictionary<string, string> FieldsTypes { get; set; }
         public Dictionary<int, string> InterfaceFieldHashCodes { get; set; }
@@ -29,6 +30,8 @@ namespace VSIXHelloWorldProject.Entity
         public Dictionary<string, string> Input { get; set; }
         public Dictionary<string, string> InputTypes { get; set; }
         public Dictionary<int, string> InterfaceInputHashCodes { get; set; }
+        public HashSet<string> InterfaceTypeInputs { get; set; }
+        public HashSet<string> ClassTypeInputs { get; set; }
         //Key: interfaceType, fieldName Value: instanceType
         public Dictionary<Tuple<string, string>, string> InterfaceTypeInputsRuntimeTypesMap { get; set; }
         public string Output { get; set; }

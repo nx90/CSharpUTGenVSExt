@@ -61,10 +61,7 @@ namespace VSIXHelloWorldProject.CodeGenerator
                 {
                     if (nameToInterfaceType.TryGetValue(name, out string interfaceType))
                     {
-                        if (toObjType.TryGetValue(new Tuple<string, string>(name, interfaceType), out string objType))
-                        {
-                            mockObjNameAndType[$"{(isField ? "field" : "arg")}_{name}"] = objType;
-                        }
+                        mockObjNameAndType[$"{(isField ? "field" : "arg")}_{name}"] = interfaceType;
                     }
                 }
             }
@@ -73,19 +70,24 @@ namespace VSIXHelloWorldProject.CodeGenerator
                 AppendLineIndented($"var {item.Key} = new Mock<{item.Value}> ();");
             }
 
+            if (testedFunctionInfo.Output.Type != "void")
+            {
+                AppendLineIndented($"var expected = {this.ObjectToCSharpCode(this.testedFunctionInfo.Output.Value, this.testedFunctionInfo.Output.Type)};");
+            }
+
             if (isExceptionCase)
             {
-                GenerateFunctionBodyException();
+                GenerateFunctionBodyException(mockObjNameAndType);
             }
             else
             {
                 if (testedFunctionInfo.Output.Type == "void")
                 {
-                    GenerateFunctionBodyNoExceptionWithVoid();
+                    GenerateFunctionBodyNoExceptionWithVoid(mockObjNameAndType);
                 }
                 else
                 {
-                    GenerateFunctionBodyNoExceptionWithoutVoid();
+                    GenerateFunctionBodyNoExceptionWithoutVoid(mockObjNameAndType);
                 }
             }
 
@@ -94,7 +96,7 @@ namespace VSIXHelloWorldProject.CodeGenerator
             return outputCode;
         }
 
-        protected void GenerateMockedFuncParasAnyBlock(List<ObjectInfo> paras)
+        protected void GenerateMockedFuncParasAnyBlock(List<ObjectInfoWithName> paras)
         {
             IndentedLevelUp();
             var length = paras.Count;
@@ -106,25 +108,25 @@ namespace VSIXHelloWorldProject.CodeGenerator
             IndentedLevelDown();
         }
 
-        private void GenerateFunctionBodyException()
+        private void GenerateFunctionBodyException(Dictionary<string, string> mockObjNameAndType)
         {
-            GenerateFuncBodyCommonPart();
+            GenerateFuncBodyCommonPart(false, mockObjNameAndType);
             // Assert in test method
             AppendLineIndented("// Assert");
             AppendLineIndented("act.Should().Throw<Exception>();");
         }
 
-        private void GenerateFunctionBodyNoExceptionWithVoid()
+        private void GenerateFunctionBodyNoExceptionWithVoid(Dictionary<string, string> mockObjNameAndType)
         {
-            GenerateFuncBodyCommonPart();
+            GenerateFuncBodyCommonPart(false, mockObjNameAndType);
             // Assert in test method
             AppendLineIndented("// Assert");
             AppendLineIndented($"act.Should().NotThrow();");
         }
 
-        private void GenerateFunctionBodyNoExceptionWithoutVoid()
+        private void GenerateFunctionBodyNoExceptionWithoutVoid(Dictionary<string, string> mockObjNameAndType)
         {
-            GenerateFuncBodyCommonPart();
+            GenerateFuncBodyCommonPart(true, mockObjNameAndType);
             // Assert in test method
             AppendLineIndented("// Assert");
             switch (testedFunctionInfo.Output.Type)
@@ -140,7 +142,7 @@ namespace VSIXHelloWorldProject.CodeGenerator
             }
         }
 
-        private void GenerateFuncBodyCommonPart()
+        private void GenerateFuncBodyCommonPart(bool needCompareValueInAssertion, Dictionary<string, string> mockObjNameAndType)
         {
             // Set up mocked functions
             foreach (var func in mockedFunctions)
@@ -164,27 +166,49 @@ namespace VSIXHelloWorldProject.CodeGenerator
             }
 
             // Create tested class instance by reflection
+            var constructorParams = node.ConstructorParameters.Select(item => item == "default" ? item : $"new Mock<{item}> ().Object");
+            AppendLineIndented($"{testedFunctionInfo.BelongedClassName} instance = new {testedFunctionInfo.BelongedClassName}({string.Join(", ", constructorParams)});");
+
             AppendLineIndented($"Type testedType = typeof({testedFunctionInfo.BelongedClassName});");
-            AppendLineIndented($"{testedFunctionInfo.BelongedClassName} instance = ({testedFunctionInfo.BelongedClassName})Activator.CreateInstance(testedType, true);");
             foreach (var fieldName in node.FieldsTypes.Keys)
             {
                 AppendLineIndented($"FieldInfo fieldInfo_{fieldName} = testedType.GetField(\"{fieldName}\");");
-                AppendLineIndented($"fieldInfo_{fieldName}.SetValue(instance, {ObjectToCSharpCode(node.Fields[fieldName], node.FieldsTypes[fieldName])});");
+                string fieldObjType = node.FieldsTypes[fieldName];
+                if (node.InterfaceTypeFields.Contains(fieldName) &&
+                    node.InterfaceTypeFieldsRuntimeTypesMap.TryGetValue(new Tuple<string, string>(fieldObjType, fieldName), out string objType))
+                {
+                    fieldObjType = objType;
+                }
+                AppendLineIndented($"fieldInfo_{fieldName}.SetValue(instance, {ObjectToCSharpCode(node.Fields[fieldName], fieldObjType)});");
             }
             AppendLineIndented($"");
-            outputCode += ");";
             IndentedLevelDown();
             AppendLineIndented();
 
             // Act
             AppendLineIndented("// Act");
-            AppendLineIndented($"Action act = () => instance.{testedFunctionInfo.FunctionName}(");
+            if (needCompareValueInAssertion)
+            {
+                AppendLineIndented($"var actual = instance.{testedFunctionInfo.FunctionName}(");
+            }
+            else
+            {
+                AppendLineIndented($"Action act = () => instance.{testedFunctionInfo.FunctionName}(");
+            }
             IndentedLevelUp();
             var funcInputParamsLen = testedFunctionInfo.InputParams.Count;
             for (var index = 0; index < funcInputParamsLen; index++)
             {
                 var param = testedFunctionInfo.InputParams[index];
-                AppendLineIndented($"{this.ObjectToCSharpCode(param.Value, param.Type)}{(index != funcInputParamsLen - 1 ? "," : string.Empty)}");
+
+                string inputObjType = param.Type;
+                if (node.InterfaceTypeInputs.Contains(param.Name) &&
+                    node.InterfaceTypeInputsRuntimeTypesMap.TryGetValue(new Tuple<string, string>(inputObjType, param.Name), out string objType))
+                {
+                    inputObjType = objType;
+                }
+
+                AppendLineIndented($"{this.ObjectToCSharpCode(param.Value, inputObjType)}{(index != funcInputParamsLen - 1 ? "," : string.Empty)}");
             }
             outputCode += ");";
             IndentedLevelDown();

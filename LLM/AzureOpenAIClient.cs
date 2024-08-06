@@ -17,12 +17,13 @@ namespace VSIXHelloWorldProject.LLM
         {
             client = new OpenAIClient(
                 new Uri(apiEndpoint),
-                new AzureKeyCredential(apiKey)
+                new AzureKeyCredential(apiKey),
+                new OpenAIClientOptions(OpenAIClientOptions.ServiceVersion.V2023_06_01_Preview)
             );
             this.deploymentName = deploymentName;
         }
 
-        public List<string> GetSimpleChatCompletions(string input, float temperature = 0.2f, int maxTokens = 790)
+        public List<string> GetSimpleChatCompletions(string input, float temperature = 0.3f, int maxTokens = 390)
         {
             var options = new ChatCompletionsOptions
             {
@@ -32,12 +33,12 @@ namespace VSIXHelloWorldProject.LLM
                 },
                 Temperature = temperature,
                 DeploymentName = deploymentName,
-                ChoiceCount = 3,
+                ChoiceCount = 2,
 
-                NucleusSamplingFactor = (float)0.95,
-                FrequencyPenalty = 0,
-                PresencePenalty = 0,
-                MaxTokens = Math.Max(maxTokens, 2000)
+                // NucleusSamplingFactor = (float)0.5,
+                // FrequencyPenalty = 0,
+                // PresencePenalty = 0,
+                MaxTokens = Math.Max(maxTokens, 390)
             };
             var completionsResponse = client.GetChatCompletions(options);
             var completions = completionsResponse.Value.Choices.Select(choice => choice.Message.Content).ToList();

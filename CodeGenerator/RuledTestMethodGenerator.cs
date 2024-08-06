@@ -77,10 +77,7 @@ namespace VSIXHelloWorldProject.CodeGenerator
                 {
                     if (nameToInterfaceType.TryGetValue(name, out string interfaceType))
                     {
-                        if (toObjType.TryGetValue(new Tuple<string, string>(interfaceType, name), out string objType))
-                        {
-                            mockObjNameAndType[$"{(isField ? "field" : "arg")}_{name}"] = objType;
-                        }
+                        mockObjNameAndType[$"{(isField ? "field" : "arg")}_{name}"] = interfaceType;
                     }
                 }
             }
@@ -111,12 +108,20 @@ namespace VSIXHelloWorldProject.CodeGenerator
             }
 
             // Create tested class instance by reflection
+            var constructorParams = node.ConstructorParameters.Select(item => item == "default" ? item : $"new Mock<{item}> ().Object");
+            AppendLineIndented($"{testedFunctionInfo.BelongedClassName} instance = new {testedFunctionInfo.BelongedClassName}({string.Join(", ", constructorParams)});");
+
             AppendLineIndented($"Type testedType = typeof({testedFunctionInfo.BelongedClassName});");
-            AppendLineIndented($"{testedFunctionInfo.BelongedClassName} instance = ({testedFunctionInfo.BelongedClassName})Activator.CreateInstance(testedType, true);");
             foreach (var fieldName in node.FieldsTypes.Keys)
             {
                 AppendLineIndented($"FieldInfo fieldInfo_{fieldName} = testedType.GetField(\"{fieldName}\");");
-                AppendLineIndented($"fieldInfo_{fieldName}.SetValue(instance, {ObjectToCSharpCode(node.Fields[fieldName], node.FieldsTypes[fieldName])});");
+                string fieldObjType = node.FieldsTypes[fieldName];
+                if (node.InterfaceTypeFields.Contains(fieldName) &&
+                    node.InterfaceTypeFieldsRuntimeTypesMap.TryGetValue(new Tuple<string, string>(fieldObjType, fieldName), out string objType))
+                {
+                    fieldObjType = objType;
+                }
+                AppendLineIndented($"fieldInfo_{fieldName}.SetValue(instance, {ObjectToCSharpCode(node.Fields[fieldName], fieldObjType)});");
             }
             AppendLineIndented();
 
@@ -135,7 +140,14 @@ namespace VSIXHelloWorldProject.CodeGenerator
             for (var index = 0; index < funcInputParamsLen; index++)
             {
                 var param = testedFunctionInfo.InputParams[index];
-                AppendLineIndented($"{this.ObjectToCSharpCode(param.Value, param.Type)}{(index != funcInputParamsLen - 1 ? "," : string.Empty)}");
+                string inputObjType = param.Type;
+                if (node.InterfaceTypeInputs.Contains(param.Name) &&
+                    node.InterfaceTypeInputsRuntimeTypesMap.TryGetValue(new Tuple<string, string>(inputObjType, param.Name), out string objType))
+                {
+                    inputObjType = objType;
+                }
+
+                AppendLineIndented($"{this.ObjectToCSharpCode(param.Value, inputObjType)}{(index != funcInputParamsLen - 1 ? "," : string.Empty)}");
             }
             outputCode += ");";
             IndentedLevelDown();
@@ -163,7 +175,7 @@ namespace VSIXHelloWorldProject.CodeGenerator
             return outputCode;
         }
 
-        protected void GenerateMockedFuncParasBlock(List<ObjectInfo> paras)
+        protected void GenerateMockedFuncParasBlock(List<ObjectInfoWithName> paras)
         {
             IndentedLevelUp();
             int length = paras.Count;

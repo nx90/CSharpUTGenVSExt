@@ -11,13 +11,13 @@ namespace VSIXHelloWorldProject.Entity
         public int ObjHashCode { get; set; }
         public string FunctionName { get; set; }
         public string BelongedClassName { get; set; }
-        public List<ObjectInfo> InputParams { get; set; }
+        public List<ObjectInfoWithName> InputParams { get; set; }
         public ObjectInfo Output { get; set; }
         public List<string> UsedNamespaces { get; set; }
 
         public FunctionInfo ShallowCopy()
         {
-            var newInputParams = InputParams.Select(para => para.ShallowCopy()).ToList();
+            List<ObjectInfoWithName> newInputParams = InputParams.Select(para => para.ShallowCopy()).ToList();
             var newOutput = Output.ShallowCopy();
             var result = (FunctionInfo)this.MemberwiseClone();
             result.Output = newOutput;

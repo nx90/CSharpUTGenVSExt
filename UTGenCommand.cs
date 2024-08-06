@@ -30,6 +30,7 @@ using VSIXHelloWorldProject.LLM;
 using System.Text.RegularExpressions;
 using System.Text;
 using Microsoft.VisualStudio;
+using System.Collections.Concurrent;
 
 namespace VSIXHelloWorldProject
 {
@@ -134,9 +135,10 @@ namespace VSIXHelloWorldProject
         /// <param Name="e">Event args.</param>
         private async void Execute(object sender, EventArgs e)
         {
+            // 
             await ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
             {
-
+                // GetAllBoundaryCasesInputList的prompt 是有问题的，input是一个list, 但是example的输出却是一个List而不是List<List>
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
                 solutionDirectory = Path.GetDirectoryName(package.dte.Solution.FullName);
@@ -181,8 +183,8 @@ namespace VSIXHelloWorldProject
                     {
                         basicInputList.Add(new ObjectInfoWithName { Name = inputName, Type = methodCallRecord.InputTypes[inputName], Value = methodCallRecord.Input[inputName] });
                     }
-                    string basicInput = JsonConvert.SerializeObject(basicInputList);
-                    boundaryCasesInput = GetBoundaryCasesInputList(funcImplString, basicInput, boundaryCasesList);
+                    // string basicInput = JsonConvert.SerializeObject(basicInputList);
+                    boundaryCasesInput = GetAllBoundaryCasesInputList(funcImplString, basicInputList, boundaryCasesList);
                 }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
                 generalPane.OutputStringThreadSafe($"\nBoundaryCasesInput generated");
 
@@ -373,8 +375,10 @@ namespace VSIXHelloWorldProject
                 if (caseOutputDict.TryGetValue(index, out var newOutput))
                 {
                     testedFunctionCopy.Output.Value = newOutput;
+
                 }
-                else                {
+                else
+                {
                     caseDescription = Regex.Replace(caseDescription, @"^// \[noException\]", "// [exception]");
                 }
                 var boundaryCaseTestMethodGenerator = new BoundaryCaseTestMethodGenerator(0, "",
@@ -404,7 +408,93 @@ namespace VSIXHelloWorldProject
             Utils.Utils.ExecuteDotnetTestCommand(unitTestProjCsprojFilePath, unitTestProjPath);
         }
 
-        private List<List<ObjectInfoWithName>> GetBoundaryCasesInputList(string funcImplString, string basicInput, List<string> boundaryCases)
+        private List<List<ObjectInfoWithName>> GetAllBoundaryCasesInputList(string funcImplString, List<ObjectInfoWithName> basicInputList, List<string> boundaryCases)
+        {
+            string basicInput = JsonConvert.SerializeObject(basicInputList);
+
+            ConcurrentDictionary<int, List<ObjectInfoWithName>> resultDict = new ConcurrentDictionary<int, List<ObjectInfoWithName>>();
+
+            Parallel.ForEach(boundaryCases.Select((value, index) => (value, index)), pair =>
+            {
+                Console.WriteLine($"Index: {pair.index}, Value: {pair.value}");
+                string boundaryCasesListQuestion = $@"
+Give me input parameters of the testing function for the boundary case shows below based on an example input which haved tested for normal case testing.
+Note that your responce will be treat as Json content directly, so do not contains any comments or text other than the json file content.
+Do not start with markdown grammer like '```json', consider your responce as raw json file content.
+
+tested function body:
+\`\`\`
+{funcImplString}
+\`\`\`
+
+normal case input parameters of the function(all parameters are valid):
+\`\`\`
+{basicInput}
+\`\`\`
+
+You need to generate input parameters of the function to test boundary case below, it is started with three tags quoted by square brackets like [noException], [mockFuncUnRelated] [SomethingLikeATestMethodName], please ingnore all of them, they are just for marking:
+\`\`\`
+{pair.value}
+\`\`\`
+
+you can just use normal case input as function input if the boundary case has [mockFuncThrowException] tag,
+output should be JSON formatted(NO COMMENTS SHOULD EXIST IN JSON FILE), 
+correct output format example below, this example contains 3 parameters:
+\`\`\`Json
+[
+    {{
+        ""Name"": ""arg1"",
+        ""Type"": ""int"",
+        ""Value"": ""1""
+    }},
+    {{
+        ""Name"": ""arg2"",
+        ""Type"": ""string"",
+        ""Value"": ""\""xx\""""
+    }},
+    {{
+        ""Name"": ""arg3"",
+        ""Type"": ""Class1"",
+        ""Value"": ""{{
+                \""field1\"": \""yy\""
+            }}""
+    }},
+]
+\`\`\`
+
+**Clear all comments in the json file before submitting it.**
+";
+                var boundaryCasesInputsChoices = azureOpenAIClient.GetSimpleChatCompletions(boundaryCasesListQuestion);
+                var casesInput = basicInputList;
+
+                foreach (var choice in boundaryCasesInputsChoices)
+                {
+                    try
+                    {
+                        casesInput = JsonConvert.DeserializeObject<List<ObjectInfoWithName>>(choice);
+                        break;
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+                }
+
+                resultDict.TryAdd(pair.index, casesInput);
+
+            });
+
+            List<List<ObjectInfoWithName>> result = Enumerable.Repeat(basicInputList, boundaryCases.Count).ToList();
+
+            foreach (var item in resultDict)
+            {
+                result[item.Key] = item.Value;
+            }
+
+            return result;
+        }
+
+        private List<ObjectInfoWithName> GetBoundaryCasesInputList(string funcImplString, string basicInput, string boundaryCases)
         {
             string boundaryCasesListQuestion = $@"
 Give me a list of inputs of testing function signature for each boundary cases shows below based on an example input which haved tested for normal case testing and testing function's signature.
@@ -455,13 +545,13 @@ correct output format example below, this example contains 3 groups of boundary 
 **Clear all comments in the json file before submitting it.**
 ";
             var boundaryCasesInputsChoices = azureOpenAIClient.GetSimpleChatCompletions(boundaryCasesListQuestion);
-            var casesInputsList = new List<List<ObjectInfoWithName>> ();
+            var casesInputsList = new List<ObjectInfoWithName> ();
 
             foreach(var choice in boundaryCasesInputsChoices)
             {
                 try
                 {
-                    casesInputsList = JsonConvert.DeserializeObject<List<List<ObjectInfoWithName>>>(choice);
+                    casesInputsList = JsonConvert.DeserializeObject<List<ObjectInfoWithName>>(choice);
                     break;
                 }
                 catch
@@ -485,29 +575,30 @@ correct output format example below, this example contains 3 groups of boundary 
 			...
 			```
 
-			Some rules about your output generation:
+			Some rules about your answer:
 			```
 			1. Mark the case as '[exception]' at the start of case if there should be an exception thrown in the case, mark as '[noException]' if not.
 			2. Then mark [mockFuncThrowException] if the case is about how mocked function throw exception, mark it as [mockFuncUnRelated] if the case is not related with any mocked function, drop the case if the case is related with a mocked function and the mock function don't throw any exception.
 			3. Finally mark test method name before case description, each test method name should be unique.
 			4. Do NOT check null value for any parameter in the case, just check the value is valid or not.
+            5. The third tag, any two TestMethodName suffixs can NOT be the same, it will be concat with constant prefix and use as test method name.
 			...
 			```
 
 			According the rules, your answer format should be like this:
 			```
 			[noException] [mockFuncUnRelated] [TestMethodName suffix for case1] 1. boundary test case description.
-			[exception] [mockFuncUnRelated] [TestMethodName suffix for case2] 2. boundary test case description.
-			[exception] [mockFuncUnRelated] [TestMethodName suffix for case3] 3. boundary test case description.
+			[noException] [mockFuncUnRelated] [TestMethodName suffix for case2] 2. boundary test case description.
+			[noException] [mockFuncUnRelated] [TestMethodName suffix for case3] 3. boundary test case description.
 			[exception] [mockFuncThrowException] [TestMethodName suffix for case4] 4. boundary test case description.
 			...
 			```
 
 			Your answer example:
 			```
-			[exception] [mockFuncUnRelated] [FirstParamInvalid] 1. first parameter is invalid.
+            [noException] [mockFuncUnRelated] [TestInBranch] 1. this case hit xx code branch.
 			[noException] [mockFuncUnRelated] [SecondParamIsValue1] 2. second parameter is value1.
-			[noException] [mockFuncUnRelated] [TestInBranch] 3. this case hit another code branch.
+			[exception] [mockFuncUnRelated] [FirstParamInvalid] 3. first parameter is invalid.
 			[exception] [mockFuncThrowException] [MockFunction1Exception] 4. mocked function function1 throw exception.
 			...
 			```
@@ -585,7 +676,7 @@ correct output format example below, this example contains 3 groups of boundary 
                     }
 
                     var testingFuncOutputCalcMethodGenerator = new TestingFuncOutputCalcMethodGenerator(
-                        0, "", testedFunction, testCaseName, mockedFunctions, methodCallRecord, outputJsonFilePath
+                        0, "", testedFunctionCopy, testCaseName, mockedFunctions, methodCallRecord, outputJsonFilePath
                     );
                     testingFuncOutputCalcMethodGenerators.Add(testingFuncOutputCalcMethodGenerator);
                 }
@@ -630,10 +721,10 @@ correct output format example below, this example contains 3 groups of boundary 
             {
                 basicInputList.Add(new ObjectInfoWithName { Name=inputName, Type= methodCallRecord.InputTypes[inputName], Value= methodCallRecord.Input[inputName] });
             }
-            string basicInput = JsonConvert.SerializeObject(basicInputList);
+            // string basicInput = JsonConvert.SerializeObject(basicInputList);
             outputNeedCalcCaseIndexs = new List<int> ();
             boundaryCasesList = GetBoundaryCasesList(funcImplString, mockedFunctions);
-            boundaryCasesInput = GetBoundaryCasesInputList(funcImplString, basicInput, boundaryCasesList);
+            boundaryCasesInput = GetAllBoundaryCasesInputList(funcImplString, basicInputList, boundaryCasesList);
             var boundaryCasesCount = boundaryCasesList.Count;
             for (int index = 0; index < boundaryCasesCount; index++)
             {
@@ -748,10 +839,10 @@ correct output format example below, this example contains 3 groups of boundary 
             var result = new List<FunctionInfo>();
             foreach(var child in methodCallRecord.Children)
             {
-                List<ObjectInfo> functionInputParams = new List<ObjectInfo>();
+                List<ObjectInfoWithName> functionInputParams = new List<ObjectInfoWithName>();
                 foreach (var name in child.Input.Keys)
                 {
-                    functionInputParams.Add(new ObjectInfo { Type = child.InputTypes[name], Value = child.Input[name] });
+                    functionInputParams.Add(new ObjectInfoWithName { Name = name, Type = child.InputTypes[name], Value = child.Input[name] });
                 }
                 ObjectInfo output = new ObjectInfo { Type = child.OutputType, Value = child.Output };
                 result.Add(new FunctionInfo
@@ -769,10 +860,10 @@ correct output format example below, this example contains 3 groups of boundary 
 
         private FunctionInfo GetTestedFunc(FunctionCallNode methodCallRecord)
         {
-            List<ObjectInfo> functionInputParams = new List<ObjectInfo>();
+            List<ObjectInfoWithName> functionInputParams = new List<ObjectInfoWithName>();
             foreach (var name in methodCallRecord.Input.Keys)
             {
-                functionInputParams.Add(new ObjectInfo { Type = methodCallRecord.InputTypes[name], Value = methodCallRecord.Input[name] });
+                functionInputParams.Add(new ObjectInfoWithName { Name = name, Type = methodCallRecord.InputTypes[name], Value = methodCallRecord.Input[name] });
             }
             ObjectInfo output = new ObjectInfo { Type = methodCallRecord.OutputType, Value = methodCallRecord.Output };
             return new FunctionInfo
