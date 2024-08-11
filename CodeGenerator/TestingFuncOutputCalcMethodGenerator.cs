@@ -95,13 +95,14 @@ namespace VSIXHelloWorldProject.CodeGenerator
             foreach (var fieldName in node.FieldsTypes.Keys)
             {
                 AppendLineIndented($"FieldInfo fieldInfo_{fieldName} = testedType.GetField(\"{fieldName}\");");
-                string fieldObjType = node.FieldsTypes[fieldName];
-                if (node.InterfaceTypeFields.Contains(fieldName) &&
-                    node.InterfaceTypeFieldsRuntimeTypesMap.TryGetValue(new Tuple<string, string>(fieldObjType, fieldName), out string objType))
+                if (node.InterfaceTypeFields.Contains(fieldName))
                 {
-                    fieldObjType = objType;
+                    AppendLineIndented($"fieldInfo_{fieldName}.SetValue(instance, field_{fieldName}.Object);");
                 }
-                AppendLineIndented($"fieldInfo_{fieldName}.SetValue(instance, {ObjectToCSharpCode(node.Fields[fieldName], fieldObjType)});");
+                else
+                {
+                    AppendLineIndented($"fieldInfo_{fieldName}.SetValue(instance, {ObjectToCSharpCode(node.Fields[fieldName], node.FieldsTypes[fieldName])});");
+                }
             }
             AppendLineIndented($"");
             // outputCode += ");";
@@ -122,14 +123,14 @@ namespace VSIXHelloWorldProject.CodeGenerator
             {
                 var param = testedFunctionInfo.InputParams[index];
 
-                string inputObjType = param.Type;
-                if (node.InterfaceTypeInputs.Contains(param.Name) &&
-                    node.InterfaceTypeInputsRuntimeTypesMap.TryGetValue(new Tuple<string, string>(inputObjType, param.Name), out string objType))
+                if (node.InterfaceTypeInputs.Contains(param.Name))
                 {
-                    inputObjType = objType;
+                    AppendLineIndented($"arg_{param.Name}.Object{(index != funcInputParamsLen - 1 ? "," : string.Empty)}");
                 }
-
-                AppendLineIndented($"{this.ObjectToCSharpCode(param.Value, inputObjType)}{(index != funcInputParamsLen - 1 ? "," : string.Empty)}");
+                else
+                {
+                    AppendLineIndented($"{this.ObjectToCSharpCode(param.Value, param.Type)}{(index != funcInputParamsLen - 1 ? "," : string.Empty)}");
+                }
             }
             outputCode += ");";
             IndentedLevelDown();

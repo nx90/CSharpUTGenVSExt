@@ -33,7 +33,7 @@ namespace VSIXHelloWorldProject.LLM
                 },
                 Temperature = temperature,
                 DeploymentName = deploymentName,
-                ChoiceCount = 2,
+                ChoiceCount = 3,
 
                 // NucleusSamplingFactor = (float)0.5,
                 // FrequencyPenalty = 0,

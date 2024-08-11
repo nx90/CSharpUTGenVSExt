@@ -382,7 +382,7 @@ namespace VSIXHelloWorldProject
                     caseDescription = Regex.Replace(caseDescription, @"^// \[noException\]", "// [exception]");
                 }
                 var boundaryCaseTestMethodGenerator = new BoundaryCaseTestMethodGenerator(0, "",
-                    testedFunction, testCaseName, mockedFunctions, methodCallRecord, caseDescription);
+                    testedFunctionCopy, testCaseName, mockedFunctions, methodCallRecord, caseDescription);
                 boundaryCaseTestMethodGenerators.Add(boundaryCaseTestMethodGenerator);
             }
             var allTestMethodGenerators = new List<MethodGenerator> { normalCaseTestMethodGenerator };
@@ -579,24 +579,24 @@ correct output format example below, this example contains 3 groups of boundary 
 			```
 			1. Mark the case as '[exception]' at the start of case if there should be an exception thrown in the case, mark as '[noException]' if not.
 			2. Then mark [mockFuncThrowException] if the case is about how mocked function throw exception, mark it as [mockFuncUnRelated] if the case is not related with any mocked function, drop the case if the case is related with a mocked function and the mock function don't throw any exception.
-			3. Finally mark test method name before case description, each test method name should be unique.
-			4. Do NOT check null value for any parameter in the case, just check the value is valid or not.
-            5. The third tag, any two TestMethodName suffixs can NOT be the same, it will be concat with constant prefix and use as test method name.
+			3. Mark test method name for the case like [TestInBranchXXX], test method name should be understandable for human to know what case you test in it. each test method name must be unique, one case should have different Short test function name with the other cases.
+            4. Finally give us the description of the test case.
+			5. Do NOT check null value for any parameter in the case, just check the value is valid or not.
 			...
 			```
 
 			According the rules, your answer format should be like this:
 			```
-			[noException] [mockFuncUnRelated] [TestMethodName suffix for case1] 1. boundary test case description.
-			[noException] [mockFuncUnRelated] [TestMethodName suffix for case2] 2. boundary test case description.
-			[noException] [mockFuncUnRelated] [TestMethodName suffix for case3] 3. boundary test case description.
-			[exception] [mockFuncThrowException] [TestMethodName suffix for case4] 4. boundary test case description.
+			[noException] [mockFuncUnRelated] [ShortTestFunctionNameForCase1] 1. boundary test case1 description.
+			[noException] [mockFuncUnRelated] [ShortTestFunctionNameForCase2] 2. boundary test case2 description.
+			[noException] [mockFuncUnRelated] [ShortTestFunctionNameForCase3] 3. boundary test case3 description.
+			[exception] [mockFuncThrowException] [ShortTestFunctionNameForCase4] 4. boundary test case4 description.
 			...
 			```
 
 			Your answer example:
 			```
-            [noException] [mockFuncUnRelated] [TestInBranch] 1. this case hit xx code branch.
+            [noException] [mockFuncUnRelated] [TestInBranchXX] 1. this case hit xx code branch.
 			[noException] [mockFuncUnRelated] [SecondParamIsValue1] 2. second parameter is value1.
 			[exception] [mockFuncUnRelated] [FirstParamInvalid] 3. first parameter is invalid.
 			[exception] [mockFuncThrowException] [MockFunction1Exception] 4. mocked function function1 throw exception.
