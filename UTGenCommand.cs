@@ -572,17 +572,15 @@ correct output format example below, this example contains 3 groups of boundary 
             3. Your answer should not contains markdown grammar like '```' 
             4. Your answer should strictly formatted as example shows and never give additional notes.
             5. No need to contains normal case in your answer, I don't need the normal case or basic case.
-			...
 			```
 
 			Some rules about your answer:
 			```
 			1. Mark the case as '[exception]' at the start of case if there should be an exception thrown in the case, mark as '[noException]' if not.
 			2. Then mark [mockFuncThrowException] if the case is about how mocked function throw exception, mark it as [mockFuncUnRelated] if the case is not related with any mocked function, drop the case if the case is related with a mocked function and the mock function don't throw any exception.
-			3. Mark test method name for the case like [TestInBranchXXX], test method name should be understandable for human to know what case you test in it. each test method name must be unique, one case should have different Short test function name with the other cases.
+			3. Mark test method name for the case like [FooHigherThanBar], test method name should be understandable for human to know what case you test in it. each test method name must be unique, one case should have different Short test function name with the other cases.
             4. Finally give us the description of the test case.
 			5. Do NOT check null value for any parameter in the case, just check the value is valid or not.
-			...
 			```
 
 			According the rules, your answer format should be like this:
@@ -596,7 +594,7 @@ correct output format example below, this example contains 3 groups of boundary 
 
 			Your answer example:
 			```
-            [noException] [mockFuncUnRelated] [TestInBranchXX] 1. this case hit xx code branch.
+            [noException] [mockFuncUnRelated] [FooHigherThanBar] 1. this case hit xx code branch.
 			[noException] [mockFuncUnRelated] [SecondParamIsValue1] 2. second parameter is value1.
 			[exception] [mockFuncUnRelated] [FirstParamInvalid] 3. first parameter is invalid.
 			[exception] [mockFuncThrowException] [MockFunction1Exception] 4. mocked function function1 throw exception.
