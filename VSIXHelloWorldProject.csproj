@@ -113,6 +113,10 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\Command1.png" />
+    <Content Include="Resources\Hat_revolutionary.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="Resources\RecordModeStartCommand.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
