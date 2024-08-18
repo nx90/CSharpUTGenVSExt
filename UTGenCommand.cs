@@ -167,48 +167,88 @@ namespace VSIXHelloWorldProject
                 List<string> boundaryCasesList = new List<string>();
                 List<List<ObjectInfoWithName>> boundaryCasesInput = new List<List<ObjectInfoWithName>>();
 
-                await Task.Factory.StartNew(() =>
+                try
                 {
-                    boundaryCasesList = GetBoundaryCasesList(funcImplString, mockedFunctions);
-                }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                    await Task.Factory.StartNew(() =>
+                    {
+                        boundaryCasesList = GetBoundaryCasesList(funcImplString, mockedFunctions);
+                    }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                }
+                catch (Exception ex)
+                {
+                    generalPane.OutputStringThreadSafe($"\nBoundary cases list generation failed. \nError Msg: \n {ex.Message}");
+                    return;
+                }
                 generalPane.OutputStringThreadSafe($"\nBoundaryCasesList generated: \n     {JsonConvert.SerializeObject(boundaryCasesList, Newtonsoft.Json.Formatting.Indented)}");
                 generalPane.OutputStringThreadSafe("\nStart to generate Inputs.");
 
-                await Task.Factory.StartNew(() =>
+                try
                 {
-                    List<ObjectInfoWithName> basicInputList = new List<ObjectInfoWithName>();
-
-                    // 这里要改，应该用Json格式
-                    foreach (var inputName in methodCallRecord.Input.Keys)
+                    await Task.Factory.StartNew(() =>
                     {
-                        basicInputList.Add(new ObjectInfoWithName { Name = inputName, Type = methodCallRecord.InputTypes[inputName], Value = methodCallRecord.Input[inputName] });
-                    }
-                    // string basicInput = JsonConvert.SerializeObject(basicInputList);
-                    boundaryCasesInput = GetAllBoundaryCasesInputList(funcImplString, basicInputList, boundaryCasesList);
-                }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                        List<ObjectInfoWithName> basicInputList = new List<ObjectInfoWithName>();
+
+                        // 这里要改，应该用Json格式
+                        foreach (var inputName in methodCallRecord.Input.Keys)
+                        {
+                            basicInputList.Add(new ObjectInfoWithName { Name = inputName, Type = methodCallRecord.InputTypes[inputName], Value = methodCallRecord.Input[inputName] });
+                        }
+                        // string basicInput = JsonConvert.SerializeObject(basicInputList);
+                        boundaryCasesInput = GetAllBoundaryCasesInputList(funcImplString, basicInputList, boundaryCasesList);
+                    }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                }
+                catch (Exception ex)
+                {
+                    generalPane.OutputStringThreadSafe($"\nBoundary cases input generation failed. \nError Msg: \n {ex.Message}");
+                    return;
+                }
                 generalPane.OutputStringThreadSafe($"\nBoundaryCasesInput generated");
 
-                await Task.Factory.StartNew(() =>
+                try
                 {
-                    GenerateOutputCalcProjWithCase(funcImplString, mockedFunctions, testedFunction,
-                    methodCallRecord, projectsInSln, csprojFileContent, testFramework,
-                    mockFramework, boundaryCasesList, boundaryCasesInput, out outputNeedCalcCaseIndexs);
-                }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                    await Task.Factory.StartNew(() =>
+                    {
+                        GenerateOutputCalcProjWithCase(funcImplString, mockedFunctions, testedFunction,
+                        methodCallRecord, projectsInSln, csprojFileContent, testFramework,
+                        mockFramework, boundaryCasesList, boundaryCasesInput, out outputNeedCalcCaseIndexs);
+                    }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                }
+                catch (Exception ex)
+                {
+                    generalPane.OutputStringThreadSafe($"\nBoundary cases output generation failed. \nError Msg: \n {ex.Message}");
+                    return;
+                }
                 generalPane.OutputStringThreadSafe($"\nBoundaryCasesOutput generated");
 
                 Dictionary<int, string> caseOutputDict = new Dictionary<int, string>();
-                await Task.Factory.StartNew(() =>
+                try
                 {
-                    caseOutputDict = GetTestingFuncOutput(outputCalcProjPath, outputNeedCalcCaseIndexs);
-                }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                    await Task.Factory.StartNew(() =>
+                    {
+                        caseOutputDict = GetTestingFuncOutput(outputCalcProjPath, outputNeedCalcCaseIndexs);
+                    }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                }
+                catch (Exception ex)
+                {
+                    generalPane.OutputStringThreadSafe($"\nGet Boundary cases output failed. \nError Msg: \n {ex.Message}");
+                    return;
+                }
                 generalPane.OutputStringThreadSafe($"\nBoundaryCasesOutput got in memory");
 
-                await Task.Factory.StartNew(() =>
+                try
                 {
-                    GenerateUnitTestProj(boundaryCasesList, boundaryCasesInput, testedFunction,
-                        caseOutputDict, mockedFunctions, methodCallRecord, projectsInSln, csprojFileContent,
-                        testFramework, mockFramework, normalCaseTestMethodGenerator);
-                }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                    await Task.Factory.StartNew(() =>
+                    {
+                        GenerateUnitTestProj(boundaryCasesList, boundaryCasesInput, testedFunction,
+                            caseOutputDict, mockedFunctions, methodCallRecord, projectsInSln, csprojFileContent,
+                            testFramework, mockFramework, normalCaseTestMethodGenerator);
+                    }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
+                }
+                catch (Exception ex)
+                {
+                    generalPane.OutputStringThreadSafe($"\nUnit test project generation failed. \nError Msg: \n {ex.Message}");
+                    return;
+                }
                 generalPane.OutputStringThreadSafe($"\nAll Done!");
             });
         }
@@ -358,6 +398,13 @@ namespace VSIXHelloWorldProject
             TestFramework testFramework, MockFramework mockFramework,
             RuledTestMethodGenerator normalCaseTestMethodGenerator)
         {
+            // Clear project generated last time
+            if (Directory.Exists(unitTestProjPath))
+            {
+                DirectoryInfo directoryInfo = new DirectoryInfo(unitTestProjPath);
+                directoryInfo.Delete(true);
+            }
+
             var boundaryCaseTestMethodGenerators = new List<BoundaryCaseTestMethodGenerator>();
             var length = Math.Min(boundaryCasesList.Count, boundaryCasesInput.Count);
             for (var index = 0; index < length; index++)
@@ -564,14 +611,15 @@ correct output format example below, this example contains 3 groups of boundary 
 
         private List<string> GetBoundaryCasesList(string funcImplString, List<FunctionInfo> mockedFunctions)
         {
-            string boundaryCasesListQuestion = $@"List minimum boundary test cases(not code just cases) for the following method below to fully achieve the goal:
+            string boundaryCasesListQuestion = $@"List minimum boundary test cases(not code just cases) for the following function implementation below to achieve the goal:
 			Goal:
 			```
-			1. Cover all code if/else/switch branches 
-			2. Generate as less as better boundary test cases to achieve goal 1.
-            3. Your answer should not contains markdown grammar like '```' 
-            4. Your answer should strictly formatted as example shows and never give additional notes.
-            5. No need to contains normal case in your answer, I don't need the normal case or basic case.
+			1. Generate boundary test cases as LESS as better to cover code lines in given function implementation.
+            2. Your answer should not contains markdown grammar like '```' 
+            3. Your answer should strictly formatted as example shows and never give additional notes.
+            4. No need to contains normal case in your answer, I don't need the normal case or basic case.
+            5. Generate empty ouput or only 1 or 2 boundary test cases as your answer when function implementation is short or simple or less than 5 lines.
+            6. Never generate more than 5 boundary test cases, your answer should contains boundary test cases as LESS as better.
 			```
 
 			Some rules about your answer:
@@ -643,6 +691,13 @@ correct output format example below, this example contains 3 groups of boundary 
             XmlDocument sourceCsprojFile, TestFramework testFramework, MockFramework mockFramework,
             List<string> boundaryCasesList, List<List<ObjectInfoWithName>> boundaryCasesInput, out List<int> outputNeedCalcCaseIndexs)
         {
+            // Clear project generated last time
+            if (Directory.Exists(outputCalcProjPath))
+            {
+                DirectoryInfo directoryInfo = new DirectoryInfo(outputCalcProjPath);
+                directoryInfo.Delete(true);
+            }
+
             outputNeedCalcCaseIndexs = new List<int>();
             var boundaryCasesCount = boundaryCasesList.Count;
             for (int index = 0; index < boundaryCasesCount; index++)
