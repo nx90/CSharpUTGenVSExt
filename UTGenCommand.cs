@@ -87,7 +87,7 @@ namespace VSIXHelloWorldProject
             var outputWindow = Package.GetGlobalService(typeof(SVsOutputWindow)) as IVsOutputWindow;
 
             Guid paneGuid = Guid.NewGuid();  // 这应该是一个固定的值，而不是每次都新生成  
-            outputWindow.CreatePane(ref paneGuid, "My Pane", 1, 1);
+            outputWindow.CreatePane(ref paneGuid, "UT Gen Extension Log Pane", 1, 1);
             outputWindow.GetPane(ref paneGuid, out generalPane);
             generalPane.Activate();
         }

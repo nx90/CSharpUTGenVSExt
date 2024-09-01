@@ -59,7 +59,7 @@
         <Parent guid="guidVSIXHelloWorldProjectPackageCmdSet" id="MyMenuGroup" />
         <Icon guid="guidImages" id="bmpPic1" />
         <Strings>
-          <ButtonText>Invoke Command1 Hello</ButtonText>
+          <ButtonText>Start UT Generation</ButtonText>
         </Strings>
       </Button>
       <Button guid="guidVSIXHelloWorldProjectPackageCmdSet1" id="cmdidRecordModeStartCommand" priority="0x0100" type="Button">

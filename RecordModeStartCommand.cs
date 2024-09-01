@@ -447,9 +447,12 @@ namespace VSIXHelloWorldProject
                 var settings = new JsonSerializerSettings();
                 settings.Converters.Add(new JsonTupleConverter());
                 nodes = JsonConvert.DeserializeObject<List<FunctionCallNode>>(content, settings);
-                nodes.RemoveAll(node => node.CodeFileName == currentNode.CodeFileName && node.CodeStartLine == currentNode.CodeStartLine && node.CodeStartCharacter == currentNode.CodeStartCharacter);
+                nodes.RemoveAll(node => node == null ||( node.CodeFileName == currentNode.CodeFileName && node.CodeStartLine == currentNode.CodeStartLine && node.CodeStartCharacter == currentNode.CodeStartCharacter));
             }
-            nodes.Add(currentNode);
+            if (currentNode != null)
+            {
+                nodes.Add(currentNode);
+            }
             content = JsonConvert.SerializeObject(nodes, Formatting.Indented);
             File.WriteAllText(filePath, content);
         }
