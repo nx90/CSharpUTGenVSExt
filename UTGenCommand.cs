@@ -67,7 +67,7 @@ namespace VSIXHelloWorldProject
         private string unitTestProjCsprojFilePath;
         private string funcIORecFile;
         private AzureOpenAIClient azureOpenAIClient;
-        private IVsOutputWindowPane generalPane = null;
+        private IVsOutputWindowPane logPane = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UTGenCommand"/> class.
@@ -88,8 +88,8 @@ namespace VSIXHelloWorldProject
 
             Guid paneGuid = Guid.NewGuid();  // 这应该是一个固定的值，而不是每次都新生成  
             outputWindow.CreatePane(ref paneGuid, "UT Gen Extension Log Pane", 1, 1);
-            outputWindow.GetPane(ref paneGuid, out generalPane);
-            generalPane.Activate();
+            outputWindow.GetPane(ref paneGuid, out logPane);
+            logPane.Activate();
         }
 
         /// <summary>
@@ -161,7 +161,7 @@ namespace VSIXHelloWorldProject
                 unitTestProjCsFilePath = Path.Combine(unitTestProjPath, $"{methodCallRecord.ClassName}.test.cs");
                 unitTestProjCsprojFilePath = Path.Combine(unitTestProjPath, "unitTestDemo.csproj");
 
-                generalPane.OutputStringThreadSafe("Basic Preparation for code genertion done.");
+                logPane.OutputStringThreadSafe("Basic Preparation for code genertion done.");
 
                 List<int> outputNeedCalcCaseIndexs = new List<int>();
                 List<string> boundaryCasesList = new List<string>();
@@ -176,11 +176,11 @@ namespace VSIXHelloWorldProject
                 }
                 catch (Exception ex)
                 {
-                    generalPane.OutputStringThreadSafe($"\nBoundary cases list generation failed. \nError Msg: \n {ex.Message}");
+                    logPane.OutputStringThreadSafe($"\nBoundary cases list generation failed. \nError Msg: \n {ex.Message}");
                     return;
                 }
-                generalPane.OutputStringThreadSafe($"\nBoundaryCasesList generated: \n     {JsonConvert.SerializeObject(boundaryCasesList, Newtonsoft.Json.Formatting.Indented)}");
-                generalPane.OutputStringThreadSafe("\nStart to generate Inputs.");
+                logPane.OutputStringThreadSafe($"\nBoundaryCasesList generated: \n     {JsonConvert.SerializeObject(boundaryCasesList, Newtonsoft.Json.Formatting.Indented)}");
+                logPane.OutputStringThreadSafe("\nStart to generate Inputs.");
 
                 try
                 {
@@ -199,10 +199,10 @@ namespace VSIXHelloWorldProject
                 }
                 catch (Exception ex)
                 {
-                    generalPane.OutputStringThreadSafe($"\nBoundary cases input generation failed. \nError Msg: \n {ex.Message}");
+                    logPane.OutputStringThreadSafe($"\nBoundary cases input generation failed. \nError Msg: \n {ex.Message}");
                     return;
                 }
-                generalPane.OutputStringThreadSafe($"\nBoundaryCasesInput generated");
+                logPane.OutputStringThreadSafe($"\nBoundaryCasesInput generated");
 
                 try
                 {
@@ -215,10 +215,10 @@ namespace VSIXHelloWorldProject
                 }
                 catch (Exception ex)
                 {
-                    generalPane.OutputStringThreadSafe($"\nBoundary cases output generation failed. \nError Msg: \n {ex.Message}");
+                    logPane.OutputStringThreadSafe($"\nBoundary cases output generation failed. \nError Msg: \n {ex.Message}");
                     return;
                 }
-                generalPane.OutputStringThreadSafe($"\nBoundaryCasesOutput generated");
+                logPane.OutputStringThreadSafe($"\nBoundaryCasesOutput generated");
 
                 Dictionary<int, string> caseOutputDict = new Dictionary<int, string>();
                 try
@@ -230,10 +230,10 @@ namespace VSIXHelloWorldProject
                 }
                 catch (Exception ex)
                 {
-                    generalPane.OutputStringThreadSafe($"\nGet Boundary cases output failed. \nError Msg: \n {ex.Message}");
+                    logPane.OutputStringThreadSafe($"\nGet Boundary cases output failed. \nError Msg: \n {ex.Message}");
                     return;
                 }
-                generalPane.OutputStringThreadSafe($"\nBoundaryCasesOutput got in memory");
+                logPane.OutputStringThreadSafe($"\nBoundaryCasesOutput got in memory");
 
                 try
                 {
@@ -246,10 +246,10 @@ namespace VSIXHelloWorldProject
                 }
                 catch (Exception ex)
                 {
-                    generalPane.OutputStringThreadSafe($"\nUnit test project generation failed. \nError Msg: \n {ex.Message}");
+                    logPane.OutputStringThreadSafe($"\nUnit test project generation failed. \nError Msg: \n {ex.Message}");
                     return;
                 }
-                generalPane.OutputStringThreadSafe($"\nAll Done!");
+                logPane.OutputStringThreadSafe($"\nAll Done!");
             });
         }
 
@@ -284,16 +284,16 @@ namespace VSIXHelloWorldProject
             unitTestProjCsFilePath = Path.Combine(unitTestProjPath, $"{methodCallRecord.ClassName}.test.cs");
             unitTestProjCsprojFilePath = Path.Combine(unitTestProjPath, "unitTestDemo.csproj");
 
-            generalPane.OutputStringThreadSafe("Basic Preparation for code genertion done.");
+            logPane.OutputStringThreadSafe("Basic Preparation for code genertion done.");
 
             var boundaryCasesList = GetBoundaryCasesList(funcImplString, mockedFunctions);
-            generalPane.OutputStringThreadSafe($"boundaryCasesList generated: \n {JsonConvert.SerializeObject(boundaryCasesList)}");
-            generalPane.OutputStringThreadSafe("Start to generate code.");
+            logPane.OutputStringThreadSafe($"boundaryCasesList generated: \n {JsonConvert.SerializeObject(boundaryCasesList)}");
+            logPane.OutputStringThreadSafe("Start to generate code.");
 
             GenerateUnitTestProjWithLLM(boundaryCasesList, methodCallRecord, projectsInSln, csprojFileContent,
                 testFramework, mockFramework, normalCaseTestMethodGenerator);
 
-            generalPane.OutputStringThreadSafe("All done.");
+            logPane.OutputStringThreadSafe("All done.");
         }
 
         /// <summary>
@@ -332,7 +332,7 @@ namespace VSIXHelloWorldProject
                 unitTestProjCsFilePath = Path.Combine(unitTestProjPath, $"{methodCallRecord.ClassName}.test.cs");
                 unitTestProjCsprojFilePath = Path.Combine(unitTestProjPath, "unitTestDemo.csproj");
 
-                generalPane.OutputStringThreadSafe("Basic Preparation for code genertion done.");
+                logPane.OutputStringThreadSafe("Basic Preparation for code genertion done.");
 
                 List<string> boundaryCasesList = new List<string>();
                 await Task.Factory.StartNew(() =>
@@ -340,8 +340,8 @@ namespace VSIXHelloWorldProject
                     boundaryCasesList = GetBoundaryCasesList(funcImplString, mockedFunctions);
                 }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
 
-                generalPane.OutputStringThreadSafe($"\nBoundaryCasesList generated: \n     {JsonConvert.SerializeObject(boundaryCasesList)}");
-                generalPane.OutputStringThreadSafe("\nStart to generate code.");
+                logPane.OutputStringThreadSafe($"\nBoundaryCasesList generated: \n     {JsonConvert.SerializeObject(boundaryCasesList)}");
+                logPane.OutputStringThreadSafe("\nStart to generate code.");
 
                 await Task.Factory.StartNew(() =>
                 {
@@ -349,7 +349,7 @@ namespace VSIXHelloWorldProject
                         testFramework, mockFramework, normalCaseTestMethodGenerator);
                 }, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default);
 
-                generalPane.OutputStringThreadSafe("\nAll done.");
+                logPane.OutputStringThreadSafe("\nAll done.");
             });
         }
 

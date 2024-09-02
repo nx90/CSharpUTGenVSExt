@@ -47,6 +47,7 @@ namespace VSIXHelloWorldProject
 
         private EnvDTE100.Debugger5 debugger;
         private string solutionDirectory;
+        private IVsOutputWindowPane logPane = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RecordModeStartCommand"/> class.
@@ -56,6 +57,7 @@ namespace VSIXHelloWorldProject
         /// <param Name="commandService">Command service to add command to, not null.</param>
         private RecordModeStartCommand(AsyncPackage package, OleMenuCommandService commandService)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             this.package = package as VSIXHelloWorldProjectPackage ?? throw new ArgumentNullException(nameof(package));
             commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
 
@@ -63,6 +65,12 @@ namespace VSIXHelloWorldProject
             var menuItem = new OleMenuCommand(this.Execute, menuCommandID);
             // menuItem.BeforeQueryStatus += new EventHandler(OnBeforeQueryStatus);
             commandService.AddCommand(menuItem);
+
+            var outputWindow = Package.GetGlobalService(typeof(SVsOutputWindow)) as IVsOutputWindow;
+            Guid paneGuid = Guid.NewGuid();  // 这应该是一个固定的值，而不是每次都新生成  
+            outputWindow.CreatePane(ref paneGuid, "UT Gen Extension Log Pane", 1, 1);
+            outputWindow.GetPane(ref paneGuid, out logPane);
+            logPane.Activate();
         }
 
         /// <summary>
@@ -111,7 +119,15 @@ namespace VSIXHelloWorldProject
             ThreadHelper.ThrowIfNotOnUIThread();
             var dte = package.dte;
             debugger = (EnvDTE100.Debugger5)dte.Debugger;
-            debugger.Go(true);
+            try
+            {
+                debugger.Go(true);
+            }
+            catch (Exception ex)
+            {
+                logPane.OutputStringThreadSafe($"Recording failed. Exception:\n {ex.Message}");
+            }
+            
             EnvDTE.StackFrame sf = debugger.CurrentStackFrame;
 
             // FunctionCallNode currentNode = new FunctionCallNode { CreationTime = DateTime.Now };
@@ -131,7 +147,7 @@ namespace VSIXHelloWorldProject
             solutionDirectory = Path.GetDirectoryName(dte.Solution.FullName);
             string copilotPlaygroundPath = Path.Combine(solutionDirectory, ".CSharpUTGen");
             WriteDownFuncIORecJson(currentNode, copilotPlaygroundPath, "funcIORec.json");
-            debugger.DetachAll();
+            debugger.TerminateAll();
         }
 
         private FunctionCallNode BuildCurrenctNode(string uniquePrefix, FunctionCallNode parentNode)
@@ -232,7 +248,7 @@ namespace VSIXHelloWorldProject
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var projectItem = GetFileProjectItem(package.dte, currentNode.CodeFileName);
+            var projectItem = package.dte.Solution.FindProjectItem(currentNode.CodeFileName);
             if (projectItem == null) throw new Exception($"Can not find project item with file name: {currentNode.CodeFileName}");
 
             var codeModel = projectItem.FileCodeModel;
@@ -391,8 +407,6 @@ namespace VSIXHelloWorldProject
             currentNode.thisJsonValue = jsonValue;
             foreach (string fieldName in currentNode.InterfaceTypeFields)
             {
-                JObject thisJObject = JObject.Parse(jsonValue);
-                fieldJsonValues[fieldName] = thisJObject[fieldName].ToString();
                 Expression fieldExp = thisExp.DataMembers.Cast<Expression>().Where(member =>
                 {
                     ThreadHelper.ThrowIfNotOnUIThread();
@@ -415,7 +429,7 @@ namespace VSIXHelloWorldProject
             foreach (string fieldName in currentNode.ClassTypeFields)
             {
                 JObject thisJObject = JObject.Parse(jsonValue);
-                fieldJsonValues[fieldName] = thisJObject[fieldName].ToString();
+                fieldJsonValues[fieldName] = thisJObject[fieldName]?.ToString() ?? string.Empty;
                 Expression fieldExp = thisExp.DataMembers.Cast<Expression>().Where(member =>
                 {
                     ThreadHelper.ThrowIfNotOnUIThread();
@@ -489,23 +503,6 @@ namespace VSIXHelloWorldProject
                 }
             }
             return uniquePrefix;
-        }
-
-        private ProjectItem GetFileProjectItem(DTE dte, string fileName)
-        {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            foreach (Project project in dte.Solution.Projects)
-            {
-                foreach (ProjectItem item in project.ProjectItems)
-                {
-                    // 这里可以根据需要递归检查项目子项  
-                    if (item.Document != null && item.Document.FullName == fileName)
-                    {
-                        return item;
-                    }
-                }
-            }
-            return null;
         }
 
         private Tuple<int, int> FindFunctionBodyElementWithStartLineAndType(CodeElements roots, int line)
