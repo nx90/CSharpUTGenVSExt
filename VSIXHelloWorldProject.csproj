@@ -73,6 +73,7 @@
     <Compile Include="RecordModeStartCommand.cs" />
     <Compile Include="UTGenCommand.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utils\ExtConstant.cs" />
     <Compile Include="Utils\Utils.cs" />
     <Compile Include="VSIXHelloWorldProjectPackage.cs" />
   </ItemGroup>

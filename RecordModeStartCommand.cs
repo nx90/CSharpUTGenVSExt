@@ -22,6 +22,7 @@ using System.Net;
 using System.ComponentModel;
 using Microsoft.VisualStudio.OLE.Interop;
 using static Azure.Core.HttpHeader;
+using VSIXHelloWorldProject.Utils;
 
 namespace VSIXHelloWorldProject
 {
@@ -118,6 +119,14 @@ namespace VSIXHelloWorldProject
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             var dte = package.dte;
+
+            // Add debugger helper class into project before build.
+            Document activeDocument = dte.ActiveDocument;
+            string activeDocumentPath = activeDocument.Path;
+            string debuggerHelperFileNamePrefix = Guid.NewGuid().ToString().Replace("-", "_");
+            string debuggerHelperFilePath = $"{activeDocumentPath}\\{debuggerHelperFileNamePrefix}_DebuggerHelper.cs";
+            AddFileToProject(debuggerHelperFilePath, ExtConstant.DebuggerHelperFileContent);
+
             debugger = (EnvDTE100.Debugger5)dte.Debugger;
             try
             {
@@ -148,6 +157,9 @@ namespace VSIXHelloWorldProject
             string copilotPlaygroundPath = Path.Combine(solutionDirectory, ".CSharpUTGen");
             WriteDownFuncIORecJson(currentNode, copilotPlaygroundPath, "funcIORec.json");
             debugger.TerminateAll();
+
+            // Delete debugger helper class into project before build.
+            DeleteFile(debuggerHelperFilePath);
         }
 
         private FunctionCallNode BuildCurrenctNode(string uniquePrefix, FunctionCallNode parentNode)
@@ -197,8 +209,7 @@ namespace VSIXHelloWorldProject
                 }
 
                 StackFrame2 stackFrame = debugger.CurrentStackFrame as StackFrame2;
-                string thisType = debugger.GetExpression("this")?.Type?.TrimStart('"')?.TrimEnd('"');
-                if (stackFrame.LineNumber == currentNode.CodeEndLine /*|| thisType != currentNode.ClassName*/)
+                if (stackFrame == null || stackFrame.LineNumber == currentNode.CodeEndLine)
                 {
                     break;
                 }
@@ -400,7 +411,7 @@ namespace VSIXHelloWorldProject
             currentNode.InterfaceTypeInputsRuntimeTypesMap = InterfaceTypeInputsRuntimeTypesMap;
 
             // GetSerializedThis
-            debugger.ExecuteStatement($"{jsonValueObjName} = {uniquePrefix}_serializeMethod.Invoke(null, new object[] {{ {thisObjectName} }});", -1, false);
+            debugger.ExecuteStatement($"{jsonValueObjName} = CSharpUnitTestGeneratorExtHelper.DebuggerHelpers.SeriWithPrivate({thisObjectName});", -1, false);
             var thisExp = debugger.GetExpression(thisObjectName);
             jsonValueExp = debugger.GetExpression(jsonValueObjName);
             jsonValue = Regex.Unescape(jsonValueExp.Value).TrimStart('"').TrimEnd('"');
@@ -540,5 +551,20 @@ namespace VSIXHelloWorldProject
             return null;
         }
 
+        private void AddFileToProject(string filePath, string content)
+        {
+            using (StreamWriter writer = new StreamWriter(filePath))
+            {
+                writer.Write(content);
+            }
+        }
+
+        private void DeleteFile(string filePath)
+        {
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+        }
     }
 }
