@@ -5,9 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VSIXHelloWorldProject.Entity;
+using CSharpUnitTestGeneratorExt.Entity;
 
-namespace VSIXHelloWorldProject.CodeGenerator
+namespace CSharpUnitTestGeneratorExt.CodeGenerator
 {
     public class RuledTestMethodGenerator : MethodGenerator
     {

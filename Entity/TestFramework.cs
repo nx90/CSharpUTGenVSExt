@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace VSIXHelloWorldProject.Entity
+namespace CSharpUnitTestGeneratorExt.Entity
 {
     public class TestFramework
     {

@@ -9,7 +9,7 @@ using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
-using VSIXHelloWorldProject.Entity;
+using CSharpUnitTestGeneratorExt.Entity;
 using Task = System.Threading.Tasks.Task;
 using System.Diagnostics;
 using EnvDTE80;
@@ -22,9 +22,9 @@ using System.Net;
 using System.ComponentModel;
 using Microsoft.VisualStudio.OLE.Interop;
 using static Azure.Core.HttpHeader;
-using VSIXHelloWorldProject.Utils;
+using CSharpUnitTestGeneratorExt.Utils;
 
-namespace VSIXHelloWorldProject
+namespace CSharpUnitTestGeneratorExt
 {
     /// <summary>
     /// Command handler

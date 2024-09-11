@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VSIXHelloWorldProject.CodeGenerator
+namespace CSharpUnitTestGeneratorExt.CodeGenerator
 {
     public abstract class MethodGenerator : CodeGeneratorBase
     {

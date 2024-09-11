@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace VSIXHelloWorldProject.CodeGenerator
+namespace CSharpUnitTestGeneratorExt.CodeGenerator
 {
     public class CsprojFileGenerator : CodeGeneratorBase
     {

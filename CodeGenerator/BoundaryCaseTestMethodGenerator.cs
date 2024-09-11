@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using VSIXHelloWorldProject.Entity;
+using CSharpUnitTestGeneratorExt.Entity;
 
-namespace VSIXHelloWorldProject.CodeGenerator
+namespace CSharpUnitTestGeneratorExt.CodeGenerator
 {
     public class BoundaryCaseTestMethodGenerator : RuledTestMethodGenerator
     {

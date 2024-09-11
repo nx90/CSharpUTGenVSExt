@@ -1,4 +1,4 @@
-﻿namespace VSIXHelloWorldProject.Entity
+﻿namespace CSharpUnitTestGeneratorExt.Entity
 {
     public enum TestedObjectCreationStyle
     {

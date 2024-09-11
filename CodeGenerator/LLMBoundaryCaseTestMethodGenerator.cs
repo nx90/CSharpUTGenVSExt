@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VSIXHelloWorldProject.Entity;
-using VSIXHelloWorldProject.LLM;
+using CSharpUnitTestGeneratorExt.Entity;
+using CSharpUnitTestGeneratorExt.LLM;
 
-namespace VSIXHelloWorldProject.CodeGenerator
+namespace CSharpUnitTestGeneratorExt.CodeGenerator
 {
     public class LLMBoundaryCaseTestMethodGenerator : MethodGenerator
     {

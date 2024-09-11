@@ -18,21 +18,21 @@ using Task = System.Threading.Tasks.Task;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Threading;
 using System.Diagnostics;
-using VSIXHelloWorldProject.Entity;
+using CSharpUnitTestGeneratorExt.Entity;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TextTemplating;
 using Microsoft.CodeAnalysis;
 using System.Xml;
-using VSIXHelloWorldProject.CodeGenerator;
+using CSharpUnitTestGeneratorExt.CodeGenerator;
 using static System.Net.Mime.MediaTypeNames;
-using VSIXHelloWorldProject.LLM;
+using CSharpUnitTestGeneratorExt.LLM;
 using System.Text.RegularExpressions;
 using System.Text;
 using Microsoft.VisualStudio;
 using System.Collections.Concurrent;
 
-namespace VSIXHelloWorldProject
+namespace CSharpUnitTestGeneratorExt
 {
     /// <summary>
     /// Command handler

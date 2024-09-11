@@ -14,7 +14,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.OLE.Interop;
 
-namespace VSIXHelloWorldProject
+namespace CSharpUnitTestGeneratorExt
 {
     /// <summary>
     /// This is the class that implements the package exposed by this assembly.

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VSIXHelloWorldProject.Entity
+namespace CSharpUnitTestGeneratorExt.Entity
 {
     public class FunctionInfo
     {

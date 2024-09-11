@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VSIXHelloWorldProject.Entity;
+using CSharpUnitTestGeneratorExt.Entity;
 using static Azure.Core.HttpHeader;
 
-namespace VSIXHelloWorldProject.CodeGenerator
+namespace CSharpUnitTestGeneratorExt.CodeGenerator
 {
     public class TestingFuncOutputCalcMethodGenerator : RuledTestMethodGenerator
     {
