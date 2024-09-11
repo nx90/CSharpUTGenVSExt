@@ -5,23 +5,14 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Linq;
-using System.Globalization;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using CSharpUnitTestGeneratorExt.Entity;
 using Task = System.Threading.Tasks.Task;
-using System.Diagnostics;
 using EnvDTE80;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using Newtonsoft.Json;
 using EnvDTE90a;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Net;
-using System.ComponentModel;
-using Microsoft.VisualStudio.OLE.Interop;
-using static Azure.Core.HttpHeader;
 using CSharpUnitTestGeneratorExt.Utils;
 
 namespace CSharpUnitTestGeneratorExt

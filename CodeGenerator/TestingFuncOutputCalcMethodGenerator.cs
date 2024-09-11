@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using CSharpUnitTestGeneratorExt.Entity;
-using static Azure.Core.HttpHeader;
 
 namespace CSharpUnitTestGeneratorExt.CodeGenerator
 {
@@ -94,7 +91,7 @@ namespace CSharpUnitTestGeneratorExt.CodeGenerator
             AppendLineIndented($"Type testedType = typeof({testedFunctionInfo.BelongedClassName});");
             foreach (var fieldName in node.FieldsTypes.Keys)
             {
-                AppendLineIndented($"FieldInfo fieldInfo_{fieldName} = testedType.GetField(\"{fieldName}\");");
+                AppendLineIndented($"FieldInfo fieldInfo_{fieldName} = testedType.GetField(\"{fieldName}\", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);");
                 if (node.InterfaceTypeFields.Contains(fieldName))
                 {
                     AppendLineIndented($"fieldInfo_{fieldName}.SetValue(instance, field_{fieldName}.Object);");

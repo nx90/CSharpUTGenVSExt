@@ -1,15 +1,12 @@
 ﻿using EnvDTE;
 using EnvDTE80;
-using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Shell.Settings;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.TextManager.Interop;
 using System;
 using System.ComponentModel.Design;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -17,19 +14,15 @@ using System.Threading.Tasks;
 using Task = System.Threading.Tasks.Task;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Threading;
-using System.Diagnostics;
 using CSharpUnitTestGeneratorExt.Entity;
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.TextTemplating;
 using Microsoft.CodeAnalysis;
 using System.Xml;
 using CSharpUnitTestGeneratorExt.CodeGenerator;
-using static System.Net.Mime.MediaTypeNames;
 using CSharpUnitTestGeneratorExt.LLM;
 using System.Text.RegularExpressions;
 using System.Text;
-using Microsoft.VisualStudio;
 using System.Collections.Concurrent;
 
 namespace CSharpUnitTestGeneratorExt
