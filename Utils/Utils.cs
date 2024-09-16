@@ -55,5 +55,14 @@ namespace CSharpUnitTestGeneratorExt.Utils
             commandWindow.SendInput($"cd /d {workingPath}", true);
             commandWindow.SendInput("YourCommand", true);
         }
+
+        public static string GetDebuggerHelperFileContent(string fileName, string CompanyInFileHeaderCopyright)
+        {
+            string fileHeaderCopyRightPart = $@"// <copyright file=""{fileName}"" company=""{CompanyInFileHeaderCopyright}"">
+//     Copyright (c) {CompanyInFileHeaderCopyright} Corporation.  All rights reserved.
+// </copyright>
+";
+            return string.Concat(fileHeaderCopyRightPart, ExtConstant.DebuggerHelperFileContent);
+        }
     }
 }

@@ -24,5 +24,10 @@ namespace CSharpUnitTestGeneratorExt
         [DisplayName("DeploymentName")]
         [Description("DeploymentName")]
         public string DeploymentName { get; set; }
+
+        [Category("UTGenSettings")]
+        [DisplayName("CopyrightFileHeaderCompany")]
+        [Description("CopyrightFileHeaderCompany")]
+        public string CopyrightFileHeaderCompany { get; set; }
     }
 }

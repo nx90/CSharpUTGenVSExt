@@ -77,6 +77,14 @@ namespace CSharpUnitTestGeneratorExt
             }
         }
 
+        public string CopyrightFileHeaderCompany
+        {
+            get
+            {
+                return page.CopyrightFileHeaderCompany;
+            }
+        }
+
         public DTE2 dte;
         public DebuggerEvents debuggerEvents;
         public bool InRecordMode = false;

@@ -14,6 +14,7 @@ using System.IO;
 using Newtonsoft.Json;
 using EnvDTE90a;
 using CSharpUnitTestGeneratorExt.Utils;
+using System.Net;
 
 namespace CSharpUnitTestGeneratorExt
 {
@@ -40,6 +41,7 @@ namespace CSharpUnitTestGeneratorExt
         private EnvDTE100.Debugger5 debugger;
         private string solutionDirectory;
         private IVsOutputWindowPane logPane = null;
+        private string CopyrightFileHeaderCompany;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RecordModeStartCommand"/> class.
@@ -110,13 +112,15 @@ namespace CSharpUnitTestGeneratorExt
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             var dte = package.dte;
+            CopyrightFileHeaderCompany = package.page.CopyrightFileHeaderCompany; 
 
             // Add debugger helper class into project before build.
             Document activeDocument = dte.ActiveDocument;
             string activeDocumentPath = activeDocument.Path;
             string debuggerHelperFileNamePrefix = Guid.NewGuid().ToString().Replace("-", "_");
-            string debuggerHelperFilePath = $"{activeDocumentPath}\\{debuggerHelperFileNamePrefix}_DebuggerHelper.cs";
-            AddFileToProject(debuggerHelperFilePath, ExtConstant.DebuggerHelperFileContent);
+            string debuggerHelperFileName = $"{debuggerHelperFileNamePrefix}_DebuggerHelper.cs";
+            string debuggerHelperFilePath = $"{activeDocumentPath}\\{debuggerHelperFileName}";
+            AddFileToProject(debuggerHelperFilePath, Utils.Utils.GetDebuggerHelperFileContent(debuggerHelperFileName, CopyrightFileHeaderCompany));
 
             debugger = (EnvDTE100.Debugger5)dte.Debugger;
             try
@@ -125,13 +129,25 @@ namespace CSharpUnitTestGeneratorExt
             }
             catch (Exception ex)
             {
+                DeleteFile(debuggerHelperFilePath);
                 logPane.OutputStringThreadSafe($"Recording failed. Exception:\n {ex.Message}");
+                return;
             }
             
             EnvDTE.StackFrame sf = debugger.CurrentStackFrame;
 
-            // FunctionCallNode currentNode = new FunctionCallNode { CreationTime = DateTime.Now };
-            string uniquePrefix = GetQualifiedPrefix(debugger);
+            string uniquePrefix = string.Empty;
+            try
+            {
+                uniquePrefix = GetQualifiedPrefix(debugger);
+            }
+            catch (Exception ex)
+            {
+                DeleteFile(debuggerHelperFilePath);
+                logPane.OutputStringThreadSafe($"Recording failed. Exception:\n {ex.Message}");
+                return;
+            }
+
             debugger.ExecuteStatement($"var {uniquePrefix}_assembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyName(new System.Reflection.AssemblyName(\"Newtonsoft.Json\"));", -1, false);
             debugger.ExecuteStatement($"var {uniquePrefix}_type = {uniquePrefix}_assembly.GetType(\"Newtonsoft.Json.JsonConvert\");", -1, false);
             debugger.ExecuteStatement($"var {uniquePrefix}_serializeMethod = {uniquePrefix}_type.GetMethod(\"SerializeObject\", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public, new Type[] {{ typeof(object) }});", -1, false);
@@ -487,6 +503,10 @@ namespace CSharpUnitTestGeneratorExt
             string uniquePrefix = string.Empty;
             // string uniquePrefix = $"_{Guid.NewGuid().ToString().Replace("-", "_")}";
             EnvDTE.StackFrame sf = debugger.CurrentStackFrame;
+            if (sf == null) 
+            {
+                throw new Exception("Null StackFrame when get qualified prefix");
+            }
 
             while (true)
             {
