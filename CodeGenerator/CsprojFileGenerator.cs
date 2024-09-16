@@ -43,7 +43,6 @@ namespace CSharpUnitTestGeneratorExt.CodeGenerator
             Version newtonsoftVer = null;
             foreach (XmlNode node in nodes)
             {
-                // 检查是否是Newtonsoft.Json
                 if (node.Attributes["Include"] != null && node.Attributes["Include"].Value == "Newtonsoft.Json")
                 {
                     newtonsoftVer = new Version(node.Attributes["Version"].Value);
@@ -83,6 +82,10 @@ namespace CSharpUnitTestGeneratorExt.CodeGenerator
 
             var propertyGroupElement = xmlDoc.CreateElement("PropertyGroup");
             projectElement.AppendChild(propertyGroupElement);
+
+            var disablePackageCentralManagementElement = xmlDoc.CreateElement("ManagePackageVersionsCentrally");
+            disablePackageCentralManagementElement.InnerText = "false";
+            propertyGroupElement.AppendChild(disablePackageCentralManagementElement);
 
             var targetFrameworkElement = xmlDoc.CreateElement("TargetFramework");
             targetFrameworkElement.InnerText = targetFramework;

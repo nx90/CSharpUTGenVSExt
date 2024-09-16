@@ -32,7 +32,6 @@ namespace CSharpUnitTestGeneratorExt.CodeGenerator
 
         protected void AppendLineInFileStarted(string line = "")
         {
-            // this is in file end
             this.outputCode += line;
         }
 

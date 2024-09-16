@@ -51,8 +51,10 @@ namespace CSharpUnitTestGeneratorExt
         private string apiEndpoint;
         private string apiKey;
         private string deploymentName;
+        private string copyrightCompanyName;
         private string copilotPlaygroundPath;
         private string outputCalcProjPath;
+        private readonly string outputCalcProjCsFileName = "outputCalc.cs";
         private string outputCalcProjCsFilePath;
         private string outputCalcProjCsprojFilePath;
         private string unitTestProjPath;
@@ -134,6 +136,7 @@ namespace CSharpUnitTestGeneratorExt
                 // GetAllBoundaryCasesInputList的prompt 是有问题的，input是一个list, 但是example的输出却是一个List而不是List<List>
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
+                copyrightCompanyName = package.page.CopyrightFileHeaderCompany;
                 solutionDirectory = Path.GetDirectoryName(package.dte.Solution.FullName);
                 GetLLMServiceConfig();
                 GetFolderAndFuncIORecFilePath();
@@ -428,8 +431,8 @@ namespace CSharpUnitTestGeneratorExt
             var allTestMethodGenerators = new List<MethodGenerator> { normalCaseTestMethodGenerator };
             allTestMethodGenerators = allTestMethodGenerators.Concat(boundaryCaseTestMethodGenerators).ToList();
 
-            var testFileGenerator = new TestFileGenerator(testFramework, mockFramework,
-                methodCallRecord.ClassName, allTestMethodGenerators);
+            var testFileGenerator = new TestFileGenerator(testFramework, mockFramework, $"{methodCallRecord.ClassName}.test.cs",
+                methodCallRecord.ClassName, copyrightCompanyName, allTestMethodGenerators);
             var code = testFileGenerator.GetOutputCodeBlock();
 
             var csprojFileGenerator = new CsprojFileGenerator(unitTestProjCsprojFilePath, sourceCsprojFile, projectsInSln);
@@ -727,8 +730,8 @@ correct output format example below, this example contains 3 groups of boundary 
                     testingFuncOutputCalcMethodGenerators.Add(testingFuncOutputCalcMethodGenerator);
                 }
 
-                var testFileGenerator = new TestFileGenerator(testFramework, mockFramework,
-                    methodCallRecord.ClassName,
+                var testFileGenerator = new TestFileGenerator(testFramework, mockFramework, outputCalcProjCsFileName,
+                    methodCallRecord.ClassName, copyrightCompanyName,
                     testingFuncOutputCalcMethodGenerators);
 
                 // 现在调试到这里了
@@ -762,7 +765,6 @@ correct output format example below, this example contains 3 groups of boundary 
         {
             List<ObjectInfoWithName> basicInputList = new List<ObjectInfoWithName>();
 
-            // 这里要改，应该用Json格式
             foreach (var inputName in methodCallRecord.Input.Keys)
             {
                 basicInputList.Add(new ObjectInfoWithName { Name=inputName, Type= methodCallRecord.InputTypes[inputName], Value= methodCallRecord.Input[inputName] });
@@ -806,11 +808,10 @@ correct output format example below, this example contains 3 groups of boundary 
                     testingFuncOutputCalcMethodGenerators.Add(testingFuncOutputCalcMethodGenerator);
                 }
 
-                var testFileGenerator = new TestFileGenerator(testFramework, mockFramework,
-                    methodCallRecord.ClassName,
+                var testFileGenerator = new TestFileGenerator(testFramework, mockFramework, outputCalcProjCsFileName,
+                    methodCallRecord.ClassName, copyrightCompanyName,
                     testingFuncOutputCalcMethodGenerators);
 
-                // 现在调试到这里了
                 var code = testFileGenerator.GetOutputCodeBlock();
                 var csprojFileGenerator = new CsprojFileGenerator(outputCalcProjCsprojFilePath, sourceCsprojFile, projectsInSln);
                 var csprojFileContent = csprojFileGenerator.GetOutputCodeBlock();
@@ -946,7 +947,7 @@ correct output format example below, this example contains 3 groups of boundary 
         {
             copilotPlaygroundPath = Path.Combine(solutionDirectory, ".CSharpUTGen");
             outputCalcProjPath = Path.Combine(copilotPlaygroundPath, ".CSharpUTGenOutputCalcProj");
-            outputCalcProjCsFilePath = Path.Combine(outputCalcProjPath, "outputCalc.cs");
+            outputCalcProjCsFilePath = Path.Combine(outputCalcProjPath, outputCalcProjCsFileName);
             outputCalcProjCsprojFilePath = Path.Combine(outputCalcProjPath, "outputCalcProj.csproj");
 
             var funcIORecFiles = Directory.GetFiles(copilotPlaygroundPath, "funcIORec.json", SearchOption.AllDirectories).ToArray();

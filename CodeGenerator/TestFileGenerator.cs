@@ -23,17 +23,23 @@ namespace CSharpUnitTestGeneratorExt.CodeGenerator
         private TestFramework testFramework;
         private MockFramework mockFramework;
         private string className;
+        private string testFileName;
+        private string copyrightCompanyName = "Microsoft";
         private List<MethodGenerator> methodGenerators;
 
         public TestFileGenerator(
             TestFramework testFramework,
             MockFramework mockFramework,
+            string testFileName,
             string className,
+            string copyrightCompanyName,
             List<MethodGenerator> methodGenerators) : base(0, "")
         {
             this.testFramework = testFramework;
             this.mockFramework = mockFramework;
+            this.testFileName = testFileName;
             this.className = className;
+            this.copyrightCompanyName = copyrightCompanyName;
             this.methodGenerators = methodGenerators;
 
             if (testFramework.UsingNamespace != null)
@@ -55,10 +61,11 @@ namespace CSharpUnitTestGeneratorExt.CodeGenerator
 
         public override string GetOutputCodeBlock()
         {
-            AppendLineIndented($"// <copyright file=\"{this.className}.test.cs\" company=\"Microsoft\">");
-            AppendLineIndented("//     Copyright (c) Microsoft Corporation.  All rights reserved.");
+            AppendLineInFileStarted($"// <copyright file=\"{testFileName}\" company=\"{copyrightCompanyName}\">");
+            AppendLineIndented($"//     Copyright (c) {copyrightCompanyName} Corporation.  All rights reserved.");
             AppendLineIndented("// </copyright>");
             AppendLineIndented();
+            AppendLineIndented("#pragma warning disable");
 
             // Using statements  
             foreach (var usingStatement in this.usingStatements)
@@ -111,6 +118,7 @@ namespace CSharpUnitTestGeneratorExt.CodeGenerator
             AppendLineIndented("}");
             IndentedLevelDown();
             AppendLineIndented("}");
+            AppendLineIndented("#pragma warning restore");
 
             return outputCode.ToString();
         }
