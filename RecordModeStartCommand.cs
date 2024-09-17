@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using EnvDTE90a;
 using CSharpUnitTestGeneratorExt.Utils;
 using System.Net;
+using System.Reflection;
 
 namespace CSharpUnitTestGeneratorExt
 {
@@ -129,8 +130,10 @@ namespace CSharpUnitTestGeneratorExt
             }
             catch (Exception ex)
             {
-                DeleteFile(debuggerHelperFilePath);
-                logPane.OutputStringThreadSafe($"Recording failed. Exception:\n {ex.Message}");
+                //DeleteFile(debuggerHelperFilePath);
+                DeleteDebuggerFiles(activeDocumentPath, "_DebuggerHelper.cs");
+
+				logPane.OutputStringThreadSafe($"Recording failed. Exception:\n {ex.Message}");
                 return;
             }
             
@@ -317,15 +320,17 @@ namespace CSharpUnitTestGeneratorExt
                 currentNode.ConstructorParameters = match.Value.Split(',').ToList();
             }
 
-
-            int ConstructorParamsCount = int.Parse(debugger.GetExpression($"(this.GetType().GetConstructors()[0] as System.Reflection.RuntimeConstructorInfo).ArgumentTypes.Length").Value.TrimStart('"').TrimEnd('"'));
-            for (int index = 0; index < ConstructorParamsCount; index++)
+            bool parseSuccess = int.TryParse(debugger.GetExpression($"(this.GetType().GetConstructors()[0] as System.Reflection.RuntimeConstructorInfo).ArgumentTypes.Length").Value.TrimStart('"').TrimEnd('"'), out int ConstructorParamsCount);
+            if (parseSuccess)
             {
-                bool isVauleType = bool.Parse(debugger.GetExpression($"(this.GetType().GetConstructors()[0] as System.Reflection.RuntimeConstructorInfo).ArgumentTypes[{index}].IsValueType").Value.TrimStart('"').TrimEnd('"'));
-                if (isVauleType)
+                for (int index = 0; index < ConstructorParamsCount; index++)
                 {
-                    // Use default here because no Type should named as default
-                    currentNode.ConstructorParameters[index] = "default";
+                    bool isVauleType = bool.Parse(debugger.GetExpression($"(this.GetType().GetConstructors()[0] as System.Reflection.RuntimeConstructorInfo).ArgumentTypes[{index}].IsValueType").Value.TrimStart('"').TrimEnd('"'));
+                    if (isVauleType)
+                    {
+                        // Use default here because no Type should named as default
+                        currentNode.ConstructorParameters[index] = "default";
+                    }
                 }
             }
         }
@@ -430,19 +435,22 @@ namespace CSharpUnitTestGeneratorExt
                     ThreadHelper.ThrowIfNotOnUIThread();
                     return member.Name == fieldName;
                 }).FirstOrDefault();
-                string fieldType = fieldExp.Type;
-                var x = fieldType.Split(' ').ToList();
-                string interfaceType = x[0];
-                string instanceTypeRaw = x[1];
-                string instanceType = instanceTypeRaw.TrimStart('{').TrimEnd('}');
+                if(fieldExp != null)
+                {
+                    string fieldType = fieldExp.Type;
+                    var x = fieldType.Split(' ').ToList();
+                    string interfaceType = x[0];
+                    string instanceTypeRaw = x[1];
+                    string instanceType = instanceTypeRaw.TrimStart('{').TrimEnd('}');
                 
-                debugger.ExecuteStatement($"{uniquePrefix}_objHashCode = {fieldName}.GetHashCode();", -1, false);
-                string fieldHashCodeString = debugger.GetExpression($"{uniquePrefix}_objHashCode").Value.TrimStart('"').TrimEnd('"');
-                int.TryParse(fieldHashCodeString, out int fieldHashCode);
-                interfaceFieldHashCodes[fieldHashCode] = fieldName;
-                fieldTypes[fieldName] = interfaceType;
-                InterfaceTypeFieldsRuntimeTypesMap[new Tuple<string, string>(interfaceType, fieldName)] = instanceType;
-                currentNode.NamespaceName.Add(debugger.GetExpression($"{fieldName}.GetType().Namespace").Value.TrimStart('"').TrimEnd('"'));
+                    debugger.ExecuteStatement($"{uniquePrefix}_objHashCode = {fieldName}.GetHashCode();", -1, false);
+                    string fieldHashCodeString = debugger.GetExpression($"{uniquePrefix}_objHashCode").Value.TrimStart('"').TrimEnd('"');
+                    int.TryParse(fieldHashCodeString, out int fieldHashCode);
+                    interfaceFieldHashCodes[fieldHashCode] = fieldName;
+                    fieldTypes[fieldName] = interfaceType;
+                    InterfaceTypeFieldsRuntimeTypesMap[new Tuple<string, string>(interfaceType, fieldName)] = instanceType;
+                    currentNode.NamespaceName.Add(debugger.GetExpression($"{fieldName}.GetType().Namespace").Value.TrimStart('"').TrimEnd('"'));
+                }
             }
             foreach (string fieldName in currentNode.ClassTypeFields)
             {
@@ -479,7 +487,7 @@ namespace CSharpUnitTestGeneratorExt
                 var settings = new JsonSerializerSettings();
                 settings.Converters.Add(new JsonTupleConverter());
                 nodes = JsonConvert.DeserializeObject<List<FunctionCallNode>>(content, settings);
-                nodes.RemoveAll(node => node == null ||( node.CodeFileName == currentNode.CodeFileName && node.CodeStartLine == currentNode.CodeStartLine && node.CodeStartCharacter == currentNode.CodeStartCharacter));
+                nodes.RemoveAll(node => node == null || currentNode == null || ( node.CodeFileName == currentNode.CodeFileName && node.CodeStartLine == currentNode.CodeStartLine && node.CodeStartCharacter == currentNode.CodeStartCharacter));
             }
             if (currentNode != null)
             {
@@ -577,5 +585,28 @@ namespace CSharpUnitTestGeneratorExt
                 File.Delete(filePath);
             }
         }
+
+        private void DeleteDebuggerFiles(string directoryPath, string postfix)
+        {
+			if (string.IsNullOrEmpty(directoryPath) || string.IsNullOrEmpty(postfix))
+			{
+				throw new ArgumentException("Directory path and postfix cannot be null or empty.");
+			}
+
+			string[] files = Directory.GetFiles(directoryPath, $"*{postfix}", SearchOption.AllDirectories);
+
+			foreach (string file in files)
+			{
+				try
+				{
+					File.Delete(file);
+					Console.WriteLine($"Deleted: {file}");
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine($"Error deleting file {file}: {ex.Message}");
+				}
+			}
+		}
     }
 }
